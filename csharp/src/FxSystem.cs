@@ -1,5 +1,4 @@
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 
 namespace NeebsBrawler;
@@ -152,26 +151,24 @@ public class FxSystem
         }
     }
 
-    public void Draw(SpriteBatch sb, Renderer r, SpriteFont font)
+    public void Draw(Renderer r, PixelFont font)
     {
         foreach (var p in _particles)
         {
             var alpha = (byte)(MathF.Max(0, p.Life) * 255);
             var c = new Color(p.Color.R, p.Color.G, p.Color.B, alpha);
-            r.FillRect((int)(p.X - p.Size/2), (int)(p.Y - p.Size/2), (int)p.Size, (int)p.Size, c);
+            r.FillRect((int)(p.X - p.Size / 2), (int)(p.Y - p.Size / 2), (int)p.Size, (int)p.Size, c);
         }
 
         foreach (var t in _texts)
         {
             float alpha = MathF.Min(1, t.Life * 2);
             var col = new Color(t.Color.R, t.Color.G, t.Color.B, (byte)(alpha * 255));
-            string txt = t.Text;
-            var size = font.MeasureString(txt) * t.Scale;
-            var pos  = new Vector2(t.X - size.X / 2, t.Y);
-
-            // Shadow
-            sb.DrawString(font, txt, pos + new Vector2(2, 2), new Color(0,0,0, (byte)(alpha*200)), 0, Vector2.Zero, t.Scale, SpriteEffects.None, 0);
-            sb.DrawString(font, txt, pos, col, 0, Vector2.Zero, t.Scale, SpriteEffects.None, 0);
+            float scale = MathF.Max(1, t.Scale * 2);
+            int tx = (int)t.X - font.MeasureWidth(t.Text, scale) / 2;
+            // Shadow then text
+            font.Draw(t.Text, tx + 1, (int)t.Y + 1, new Color(0, 0, 0, (byte)(alpha * 180)), scale);
+            font.Draw(t.Text, tx,     (int)t.Y,     col, scale);
         }
     }
 }

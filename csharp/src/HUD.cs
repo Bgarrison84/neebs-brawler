@@ -5,24 +5,22 @@ namespace NeebsBrawler;
 
 public class HUD
 {
-    private SpriteFont _font;
-    private SpriteFont _fontBig;
-    private Renderer   _r;
-    private SpriteBatch _sb;
+    private readonly PixelFont _font;
+    private readonly Renderer  _r;
 
-    public HUD(SpriteFont font, SpriteFont fontBig, Renderer r, SpriteBatch sb)
+    public HUD(PixelFont font, Renderer r)
     {
-        _font = font; _fontBig = fontBig; _r = r; _sb = sb;
+        _font = font;
+        _r    = r;
     }
 
     public void Draw(Player player, int wave, int enemyCount, int score,
                      string waveState, int waveClearTimer)
     {
-        int W = 800, H = 580;
+        const int W = 800, H = 580;
 
-        // HP bar
-        int hpBarW = 220, hpBarH = 18;
-        int hpX = 20, hpY = 20;
+        // ── HP bar ────────────────────────────────────────────────────────────
+        const int hpBarW = 220, hpBarH = 18, hpX = 20, hpY = 24;
         _r.FillRect(hpX - 2, hpY - 2, hpBarW + 4, hpBarH + 4, Color.Black);
         float ratio = (float)player.Hp / player.MaxHp;
         Color hpColor = ratio > 0.5f ? new Color(34, 221, 68, 255)
@@ -30,69 +28,62 @@ public class HUD
         _r.FillRect(hpX, hpY, (int)(hpBarW * ratio), hpBarH, hpColor);
         _r.OutlineRect(hpX, hpY, hpBarW, hpBarH, new Color(0xFF, 0x6B, 0x35, 255), 2);
 
-        DrawText("NEEBS", hpX, hpY - 4, new Color(0xFF, 0x6B, 0x35, 255));
-        DrawText($"HP  {player.Hp}/{player.MaxHp}", hpX + 6, hpY + 13, Color.White);
+        _font.DrawShadowed("NEEBS",               hpX, hpY - 18, new Color(0xFF, 0x6B, 0x35, 255), 2);
+        _font.DrawShadowed($"HP {player.Hp}/{player.MaxHp}", hpX + 6, hpY + 5, Color.White, 1.5f);
 
-        // Score
-        DrawTextRight($"{score:D7}", W - 20, 36, Color.Gold);
-        DrawTextRight("SCORE", W - 20, 18, new Color(0xAA, 0x88, 0x00, 255));
+        // ── Score ─────────────────────────────────────────────────────────────
+        _font.DrawShadowed("SCORE",          W - 20 - _font.MeasureWidth("SCORE", 1.5f), 10, new Color(0xAA, 0x88, 0x00, 255), 1.5f);
+        _font.DrawShadowed($"{score:D7}",    W - 20 - _font.MeasureWidth($"{score:D7}", 2), 24, Color.Gold, 2);
 
-        // Wave / enemies
-        DrawTextCenter($"WAVE {wave + 1}", W / 2, 20, Color.LightGray);
-        DrawTextCenter($"ENEMIES: {enemyCount}", W / 2, 36, new Color(0xFF, 0x66, 0x66, 255));
+        // ── Wave / enemies ────────────────────────────────────────────────────
+        string waveStr = $"WAVE {wave + 1}";
+        string enemStr = $"ENEMIES: {enemyCount}";
+        _font.DrawShadowed(waveStr, W / 2 - _font.MeasureWidth(waveStr, 2) / 2, 10, Color.LightGray, 2);
+        _font.DrawShadowed(enemStr, W / 2 - _font.MeasureWidth(enemStr, 1.5f) / 2, 28, new Color(0xFF, 0x66, 0x66, 255), 1.5f);
 
-        // Combo
+        // ── Combo ─────────────────────────────────────────────────────────────
         if (player.ComboCount >= 3)
         {
             int c = player.ComboCount;
             Color cc = c >= 8 ? Color.Red : c >= 5 ? Color.Orange : Color.Gold;
-            DrawTextCenter($"{c} COMBO!", W / 2, 68, cc, 1.2f);
+            string comboStr = $"{c} COMBO!";
+            float cs = c >= 8 ? 3f : c >= 5 ? 2.5f : 2f;
+            _font.DrawShadowed(comboStr, W / 2 - _font.MeasureWidth(comboStr, cs) / 2, 52, cc, cs);
         }
 
-        // Buffs
+        // ── Buffs ─────────────────────────────────────────────────────────────
         int bx = 20;
         if (player.SpeedBuff > 0)
         {
-            DrawText($"SPEED {player.SpeedBuff / 60 + 1}s", bx, 56, Color.Cyan);
-            bx += 100;
+            string s = $"SPEED {player.SpeedBuff / 60 + 1}S";
+            _font.DrawShadowed(s, bx, 50, Color.Cyan, 1.5f);
+            bx += _font.MeasureWidth(s, 1.5f) + 10;
         }
         if (player.PowerBuff > 0)
         {
-            DrawText($"POWER {player.PowerBuff / 60 + 1}s", bx, 56, Color.OrangeRed);
+            _font.DrawShadowed($"POWER {player.PowerBuff / 60 + 1}S", bx, 50, Color.OrangeRed, 1.5f);
         }
 
-        // Wave clear overlay
+        // ── Wave clear overlay ────────────────────────────────────────────────
         if (waveState == "wave_clear")
         {
-            float alpha = System.MathF.Min(1, waveClearTimer / 30f) *
-                          System.MathF.Min(1, (180 - waveClearTimer) / 30f);
-            _r.FillRect(W/2 - 200, H/2 - 50, 400, 100, new Color(0, 0, 0, (byte)(alpha * 200)));
-            DrawTextCenter("WAVE CLEAR!", W/2, H/2 + 8, Color.Gold, 2.0f);
-            DrawTextCenter($"WAVE {wave + 2} INCOMING...", W/2, H/2 + 36, Color.White, 0.9f);
+            _r.FillRect(W / 2 - 210, H / 2 - 40, 420, 80, new Color(0, 0, 0, 200));
+            string wc = "WAVE CLEAR!";
+            _font.DrawShadowed(wc, W / 2 - _font.MeasureWidth(wc, 3) / 2, H / 2 - 28, Color.Gold, 3);
+            string nxt = $"WAVE {wave + 2} INCOMING...";
+            _font.DrawShadowed(nxt, W / 2 - _font.MeasureWidth(nxt, 1.5f) / 2, H / 2 + 18, Color.White, 1.5f);
         }
 
-        // Game over
+        // ── Game over ─────────────────────────────────────────────────────────
         if (waveState == "game_over")
         {
             _r.FillRect(0, 0, W, H, new Color(0, 0, 0, 190));
-            DrawTextCenter("GAME OVER", W/2, H/2 - 20, Color.Red, 2.2f);
-            DrawTextCenter($"FINAL SCORE: {score}", W/2, H/2 + 24, Color.Gold, 1.1f);
-            DrawTextCenter("Press Escape to quit", W/2, H/2 + 58, Color.LightGray, 0.8f);
+            string go = "GAME OVER";
+            _font.DrawShadowed(go, W / 2 - _font.MeasureWidth(go, 4) / 2, H / 2 - 40, Color.Red, 4);
+            string sc = $"FINAL SCORE: {score}";
+            _font.DrawShadowed(sc, W / 2 - _font.MeasureWidth(sc, 2) / 2, H / 2 + 20, Color.Gold, 2);
+            string quit = "PRESS ESCAPE TO QUIT";
+            _font.DrawShadowed(quit, W / 2 - _font.MeasureWidth(quit, 1.5f) / 2, H / 2 + 50, Color.LightGray, 1.5f);
         }
-    }
-
-    void DrawText(string s, int x, int y, Color c, float scale = 1f)
-        => _sb.DrawString(_font, s, new Vector2(x, y), c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
-
-    void DrawTextRight(string s, int rx, int y, Color c, float scale = 1f)
-    {
-        var size = _font.MeasureString(s) * scale;
-        _sb.DrawString(_font, s, new Vector2(rx - size.X, y), c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
-    }
-
-    void DrawTextCenter(string s, int cx, int y, Color c, float scale = 1f)
-    {
-        var size = _font.MeasureString(s) * scale;
-        _sb.DrawString(_font, s, new Vector2(cx - size.X / 2, y), c, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
     }
 }

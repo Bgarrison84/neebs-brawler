@@ -11,7 +11,7 @@ public class Game1 : Game
     private GraphicsDeviceManager _graphics;
     private SpriteBatch           _sb = null!;
     private Renderer              _r  = null!;
-    private SpriteFont            _font = null!;
+    private PixelFont             _font = null!;
     private Texture2D             _bgTex = null!;
 
     private InputManager   _input   = new();
@@ -71,8 +71,8 @@ public class Game1 : Game
     {
         _sb   = new SpriteBatch(GraphicsDevice);
         _r    = new Renderer(_sb, GraphicsDevice);
-        _font = Content.Load<SpriteFont>("DefaultFont");
-        _hud  = new HUD(_font, _font, _r, _sb);
+        _font = new PixelFont(_r);
+        _hud  = new HUD(_font, _r);
 
         _bgTex = BuildBackground();
         _player = new Player(400, 200);
@@ -228,7 +228,7 @@ public class Game1 : Game
         foreach (var (_, draw) in drawOrder) draw();
 
         // FX
-        _fx.Draw(_sb, _r, _font);
+        _fx.Draw(_r, _font);
 
         // HUD
         int living = 0;
