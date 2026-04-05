@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 
 namespace NeebsBrawler;
@@ -155,19 +156,19 @@ public class FxSystem
     {
         foreach (var p in _particles)
         {
-            var alpha = (byte)(MathF.Max(0, p.Life) * 255);
-            var c = new Color(p.Color.R, p.Color.G, p.Color.B, alpha);
+            int alpha = (int)(Math.Max(0f, p.Life) * 255);
+            var c = new Color((int)p.Color.R, (int)p.Color.G, (int)p.Color.B, alpha);
             r.FillRect((int)(p.X - p.Size / 2), (int)(p.Y - p.Size / 2), (int)p.Size, (int)p.Size, c);
         }
 
         foreach (var t in _texts)
         {
-            float alpha = MathF.Min(1, t.Life * 2);
-            var col = new Color(t.Color.R, t.Color.G, t.Color.B, (byte)(alpha * 255));
-            float scale = MathF.Max(1, t.Scale * 2);
+            int alpha = (int)(Math.Min(1f, t.Life * 2) * 255);
+            var col = new Color((int)t.Color.R, (int)t.Color.G, (int)t.Color.B, alpha);
+            float scale = Math.Max(1f, t.Scale * 2);
             int tx = (int)t.X - font.MeasureWidth(t.Text, scale) / 2;
             // Shadow then text
-            font.Draw(t.Text, tx + 1, (int)t.Y + 1, new Color(0, 0, 0, (byte)(alpha * 180)), scale);
+            font.Draw(t.Text, tx + 1, (int)t.Y + 1, new Color(0, 0, 0, alpha * 180 / 255), scale);
             font.Draw(t.Text, tx,     (int)t.Y,     col, scale);
         }
     }

@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using System;
 
 namespace NeebsBrawler;
 
@@ -45,8 +46,8 @@ public static class Sprites
 
         bool punching = state is "punch1" or "punch2" or "punch3";
         bool kicking  = state is "kick1" or "kick2";
-        float punchT  = punching ? System.MathF.Clamp01(animT) : 0;
-        float kickT   = kicking  ? System.MathF.Clamp01(animT) : 0;
+        float punchT  = punching ? Math.Clamp(animT, 0f, 1f) : 0;
+        float kickT   = kicking  ? Math.Clamp(animT, 0f, 1f) : 0;
 
         int dir = facing; // +1 or -1
 
@@ -113,7 +114,7 @@ public static class Sprites
         r.Shadow(x, groundY, 18);
 
         bool atk = state == "attack";
-        float atkT = atk ? System.MathF.Clamp01(animT) : 0;
+        float atkT = atk ? Math.Clamp(animT, 0f, 1f) : 0;
 
         r.FillRect(x - 12, sy - 8,  11, 8, CBlack);
         r.FillRect(x + 1,  sy - 8,  11, 8, CBlack);
@@ -153,7 +154,7 @@ public static class Sprites
         r.Shadow(x, groundY, 26);
 
         bool atk = state == "attack";
-        float atkT = atk ? System.MathF.Clamp01(animT) : 0;
+        float atkT = atk ? Math.Clamp(animT, 0f, 1f) : 0;
 
         r.FillRect(x - 18, sy - 10, 16, 10, new Color(0x11, 0x11, 0x11, 255));
         r.FillRect(x + 2,  sy - 10, 16, 10, new Color(0x11, 0x11, 0x11, 255));
@@ -276,8 +277,3 @@ public static class Sprites
     }
 }
 
-// Extension so we can use MathF.Clamp01 conveniently
-static class MathFExt
-{
-    public static float Clamp01(float v) => MathF.Max(0, MathF.Min(1, v));
-}
