@@ -1,0 +1,7 @@
+## Build output
+csharp/bin/
+csharp/obj/
+
+## OS
+.DS_Store
+Thumbs.db
