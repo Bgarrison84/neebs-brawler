@@ -122,9 +122,13 @@ export class Game {
     for (const e of liveEnemies) e.update(this.player, liveEnemies, ARENA);
     this.enemies = this.enemies.filter(e => !e.dead || e.state === 'die');
 
-    // Clear _hitThisSwing at start of each enemy update cycle
+    // Clear per-swing hit flags each frame
     for (const e of liveEnemies) {
       if (e.state !== 'attack') e._hitThisSwing = false;
+    }
+    // Props: reset hit flag when player is not in an active attack window
+    if (!this.player.isAttacking()) {
+      for (const p of this.props) p._hitThisSwing = false;
     }
 
     // Props
@@ -178,7 +182,7 @@ export class Game {
     if (this.waveState === 'playing') {
       const allSpawned  = this.waveSpawns.length === 0;
       const allDead     = this.enemies.every(e => e.hp <= 0 || e.dead);
-      if (allSpawned && allDead && this.enemies.length === 0 || allSpawned && allDead) {
+      if (allSpawned && allDead) {
         this.waveState = 'wave_clear';
         this.waveClearT = 180; // 3 seconds
       }

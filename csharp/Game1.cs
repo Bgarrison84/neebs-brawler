@@ -104,6 +104,17 @@ public class Game1 : Game
         foreach (var e in _enemies) { if (!e.Dead) live.Add(e); }
         foreach (var e in live) e.Update(_player, live, Arena);
 
+        // Clear per-swing hit flags each frame
+        foreach (var e in live)
+        {
+            if (e.State != "attack") e.HitThisSwing = false;
+        }
+        // Props: reset when player not in active attack window
+        if (!_player.IsAttacking)
+        {
+            foreach (var p in _props) p.HitThisSwing = false;
+        }
+
         foreach (var p in _props) p.Update();
 
         // Drops pickup
@@ -125,16 +136,7 @@ public class Game1 : Game
         }
         _drops.RemoveAll(d => d.Dead);
 
-        // Spawn drops from dead props
-        foreach (var p in _props)
-        {
-            if (p.Dead && !p.Dead) continue; // placeholder; handled below
-        }
-        foreach (var p in _props)
-        {
-            if (p.Dead) { /* drop spawn handled first time via flag */ }
-        }
-        // Proper: first-time dead prop spawns a drop
+        // Spawn drops from dead props (only once per prop via HashSet guard)
         foreach (var p in _props)
         {
             if (p.Dead && _droppedProps.Add(p))

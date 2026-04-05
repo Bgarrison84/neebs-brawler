@@ -8,6 +8,8 @@ public class CombatSystem
     public int HitstopFrames { get; private set; }
     public bool IsFrozen => HitstopFrames > 0;
 
+    private static readonly Random _rng = new();
+
     private static bool Overlaps(Rectangle a, Rectangle b)
         => a.Left < b.Right && a.Right > b.Left && a.Top < b.Bottom && a.Bottom > b.Top;
 
@@ -31,7 +33,7 @@ public class CombatSystem
         HitstopFrames = heavy ? 5 : 3;
 
         target.VX = attacker.Facing * (heavy ? 6f : 3f);
-        target.VY = heavy ? (new System.Random().NextSingle() - 0.5f) * 3 : 0;
+        target.VY = heavy ? (_rng.NextSingle() - 0.5f) * 3 : 0;
         if (heavy) target.VZ = 4;
 
         target.SetState(heavy ? "knockback" : "hurt", heavy ? 28 : 14);
