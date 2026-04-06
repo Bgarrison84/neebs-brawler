@@ -64,10 +64,19 @@ export class Player {
 
     this.buffs = { speed: 0, power: 0 };
 
+    // Super meter
+    this.superMeter    = 0;
+    this.maxSuperMeter = 100;
+    this.superFired    = false; // game reads + clears this to execute the super
+
     // Jump
     this.onGround  = true;
     this.JUMP_FORCE = charDef.jumpForce ?? 10;
     this.GRAVITY    = 0.55;
+  }
+
+  fillMeter(amount) {
+    this.superMeter = Math.min(this.maxSuperMeter, this.superMeter + amount);
   }
 
   get speed()     { return this.buffs.speed > 0 ? this.charDef.buffedSpeed : this.charDef.baseSpeed; }
@@ -121,6 +130,13 @@ export class Player {
         this._handleMovement(input, bounds);
         this._handleAttackInput(input);
         this._handleJumpInput(input);
+        this._handleSuperInput(input);
+        break;
+
+      case 'super':
+        // Locked — fire effect at frame 20, then idle
+        if (this.stateTimer === 55) this.superFired = true; // 75 - 20 = 55
+        if (this.stateTimer <= 0)   this.state = 'idle';
         break;
 
       case 'jump':
@@ -199,6 +215,16 @@ export class Player {
     }
   }
 
+  _handleSuperInput(input) {
+    if (input.consume('KeyV') && this.superMeter >= this.maxSuperMeter) {
+      this.state      = 'super';
+      this.stateTimer = 75;
+      this.superMeter = 0;
+      this.superFired = false;
+      this.invFrames  = 75; // invincible during super
+    }
+  }
+
   _startAttack(name) {
     const def = this.attacks[name];
     this.state         = name;
@@ -242,6 +268,21 @@ export class Player {
         ctx.stroke();
         ctx.restore();
       }
+    }
+
+    // Super activation aura
+    if (this.state === 'super') {
+      ctx.save();
+      ctx.globalAlpha = 0.35 + Math.sin(this.animT * 12) * 0.2;
+      ctx.strokeStyle = this.charDef.color;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy - 45, 34, 58, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 0.15;
+      ctx.fillStyle = this.charDef.color;
+      ctx.fill();
+      ctx.restore();
     }
 
     this.charDef.drawFn(ctx, sx, sy, this.facing, this.state, this.animT, this.z);

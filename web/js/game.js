@@ -20,6 +20,7 @@ function toScreen(wx, wy) {
   return { sx: wx, sy: ARENA.screenTop + wy * ARENA.depthScale };
 }
 
+
 // Wave configs: array of {type, count, delay} spawn entries
 const WAVES = [
   [{ type:'goon',  count:3, delay:60 }],
@@ -63,6 +64,8 @@ export class Game {
     this.frame           = 0;
     this.paused          = false;
     this._prevPlayerState = 'idle';
+
+    this._toScreen = toScreen;
 
     this._bgCanvas   = document.createElement('canvas');
     this._bgCanvas.width  = this.W;
@@ -128,6 +131,12 @@ export class Game {
       audio.jump();
     }
     this._prevPlayerState = this.player.state;
+
+    // Super execution
+    if (this.player.superFired) {
+      this.player.superFired = false;
+      this._executeSuper();
+    }
 
     // Enemies
     const liveEnemies = this.enemies.filter(e => !e.dead);
@@ -214,6 +223,49 @@ export class Game {
     if (this.player.hp <= 0 && this.waveState !== 'game_over') {
       this.waveState = 'game_over';
       audio.gameOver();
+    }
+  }
+
+  _executeSuper() {
+    const liveEnemies = this.enemies.filter(e => e.hp > 0 && !e.dead);
+    const id = this.charDef.id;
+
+    if (id === 'neebs') {
+      // "DUDE!" — scream stun: all enemies stunned + 25 damage
+      audio.neebsSuper();
+      this.fx.addScreenFlash('#FF6B35', 0.5);
+      this.fx.addSuperText('DUDE!', '#FF6B35');
+      this.fx.addShake(10, 20);
+      for (const e of liveEnemies) {
+        e.hp = Math.max(0, e.hp - 25);
+        e.state     = 'hurt';
+        e.stateTimer = 90;
+        e.invFrames  = 0;
+        this.fx.addHitSpark(e.x, e.y - 40, '#FF6B35', 14);
+      }
+    } else if (id === 'appsro') {
+      // "SCIENCE!" — lab explosion: heavy damage + outward knockback
+      audio.appsroSuper();
+      this.fx.addScreenFlash('#44AAFF', 0.5);
+      this.fx.addSuperText('SCIENCE!', '#44AAFF');
+      this.fx.addShake(14, 24);
+      const { sx: px, sy: py } = this._toScreen(this.player.x, this.player.y);
+      this.fx.addShockwave(px, py - 40, 320, '#44AAFF');
+      this.fx.addShockwave(px, py - 40, 200, '#FFFFFF');
+      for (const e of liveEnemies) {
+        e.hp = Math.max(0, e.hp - 50);
+        // Knockback away from Appsro
+        const dx = e.x - this.player.x;
+        const dy = e.y - this.player.y;
+        const dist = Math.max(1, Math.hypot(dx, dy));
+        e.vx = (dx / dist) * 10;
+        e.vy = (dy / dist) * 5;
+        e.vz = 6;
+        e.state     = 'knockback';
+        e.stateTimer = 35;
+        e.invFrames  = 0;
+        this.fx.addHitSpark(e.x, e.y - 40, '#44AAFF', 16);
+      }
     }
   }
 
@@ -321,6 +373,33 @@ export class Game {
       ctx.fillStyle = '#FF8800';
       ctx.fillText(`💥POWER ${Math.ceil(this.player.buffs.power / 60)}s`, buffX, 56);
     }
+
+    // Super meter bar
+    const superRatio = this.player.superMeter / this.player.maxSuperMeter;
+    const isFull     = superRatio >= 1;
+    const superBarW  = 220, superBarH = 10;
+    const superX = 20, superY = 44;
+    const pulse  = isFull ? 0.5 + Math.sin(this.frame * 0.2) * 0.5 : 1;
+
+    ctx.fillStyle = '#111';
+    ctx.fillRect(superX - 2, superY - 2, superBarW + 4, superBarH + 4);
+    // Fill gradient
+    const grad = ctx.createLinearGradient(superX, 0, superX + superBarW, 0);
+    grad.addColorStop(0, this.charDef.color);
+    grad.addColorStop(1, isFull ? '#FFFFFF' : this.charDef.color);
+    ctx.fillStyle = grad;
+    ctx.globalAlpha = isFull ? pulse : 1;
+    ctx.fillRect(superX, superY, Math.floor(superBarW * superRatio), superBarH);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = isFull ? '#FFFFFF' : '#333355';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(superX, superY, superBarW, superBarH);
+
+    // Label
+    ctx.font = 'bold 9px Courier New';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = isFull ? '#FFFFFF' : '#888899';
+    ctx.fillText(isFull ? 'SUPER READY — press V!' : 'SUPER', superX, superY - 2);
   }
 
   _drawWaveClear(ctx) {

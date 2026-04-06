@@ -15,7 +15,7 @@ export class InputManager {
     }
     if (!this.keys[e.code]) {
       this.justPressed[e.code] = true;
-      if (['KeyZ','KeyX','KeyC','Space'].includes(e.code)) {
+      if (['KeyZ','KeyX','KeyC','Space','KeyV'].includes(e.code)) {
         this._buffer.push({ code: e.code, t: performance.now() });
       }
     }

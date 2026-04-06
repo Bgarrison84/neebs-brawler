@@ -183,6 +183,31 @@ class AudioSystem {
     } catch (e) {}
   }
 
+  neebsSuper() {
+    try {
+      this.unlock();
+      const m = this._master(0.55);
+      // Rising scream
+      this._osc(m, 'sawtooth', 200, 800, 0.5, 0.6);
+      this._osc(m, 'sine',     300, 1200, 0.5, 0.4);
+      // Noise burst impact
+      this._noise(m, 0.4, 1.2, 1500, 0.8, 0.1);
+    } catch (e) {}
+  }
+
+  appsroSuper() {
+    try {
+      this.unlock();
+      const m = this._master(0.6);
+      // Deep rumble
+      this._osc(m, 'sine', 55, 30, 0.7, 0.8);
+      // Mid crackle
+      this._noise(m, 0.6, 1.4, 600, 0.6);
+      // High sci-fi sweep
+      this._osc(m, 'sawtooth', 800, 200, 0.4, 0.35, 0.05);
+    } catch (e) {}
+  }
+
   gameOver() {
     try {
       this.unlock();

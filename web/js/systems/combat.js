@@ -93,6 +93,8 @@ export class CombatSystem {
         else if (heavy)                     audio.punchHeavy();
         else                                audio.punchLight();
         audio.enemyHurt();
+        // Super meter
+        player.fillMeter(heavy ? 12 : 8);
       }
     }
 
@@ -143,6 +145,7 @@ export class CombatSystem {
         fx.addShake(3, 6);
         audio.punchLight();
         audio.playerHurt();
+        player.fillMeter(5);
       }
     }
   }

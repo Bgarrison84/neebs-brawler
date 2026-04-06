@@ -4,9 +4,24 @@ import { randomHitWord } from '../sprites/sprites.js';
 
 export class FxSystem {
   constructor() {
-    this.particles = [];
-    this.texts     = [];
-    this.shake     = { x: 0, y: 0, dur: 0, strength: 0 };
+    this.particles  = [];
+    this.texts      = [];
+    this.shake      = { x: 0, y: 0, dur: 0, strength: 0 };
+    this.flash      = null;  // { color, life, maxLife }
+    this.superText  = null;  // { text, color, life, maxLife }
+    this.shockwaves = [];    // [{ x, y, radius, maxRadius, life, color }]
+  }
+
+  addScreenFlash(color = '#FFFFFF', dur = 0.35) {
+    this.flash = { color, life: 1, maxLife: dur };
+  }
+
+  addSuperText(text, color = '#FFD700', dur = 1.4) {
+    this.superText = { text, color, life: 1, maxLife: dur };
+  }
+
+  addShockwave(x, y, maxRadius = 280, color = '#FFFFFF') {
+    this.shockwaves.push({ x, y, radius: 0, maxRadius, life: 1, color });
   }
 
   // Screen shake
@@ -160,6 +175,25 @@ export class FxSystem {
       t.life -= dt * 1.2;
     }
     this.texts = this.texts.filter(t => t.life > 0);
+
+    // Screen flash
+    if (this.flash) {
+      this.flash.life -= dt / this.flash.maxLife;
+      if (this.flash.life <= 0) this.flash = null;
+    }
+
+    // Super text
+    if (this.superText) {
+      this.superText.life -= dt / this.superText.maxLife;
+      if (this.superText.life <= 0) this.superText = null;
+    }
+
+    // Shockwaves
+    for (const s of this.shockwaves) {
+      s.life -= dt * 1.8;
+      s.radius = s.maxRadius * (1 - s.life);
+    }
+    this.shockwaves = this.shockwaves.filter(s => s.life > 0);
   }
 
   draw(ctx) {
@@ -198,6 +232,46 @@ export class FxSystem {
       ctx.restore();
     }
 
+    // Shockwave rings
+    for (const s of this.shockwaves) {
+      ctx.save();
+      ctx.globalAlpha = s.life * 0.75;
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 5 * s.life;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Screen flash (drawn outside shake translate so it covers full canvas)
     ctx.restore();
+    if (this.flash) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, this.flash.life) * 0.65;
+      ctx.fillStyle = this.flash.color;
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.restore();
+    }
+
+    // Super text (big centered)
+    if (this.superText) {
+      const W = ctx.canvas.width, H = ctx.canvas.height;
+      const t = this.superText;
+      const progress = 1 - t.life; // 0→1 as it fades
+      const scale = 1 + Math.sin(progress * Math.PI) * 0.4;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, t.life * 3);
+      ctx.font = `bold ${Math.floor(52 * scale)}px 'Courier New', monospace`;
+      ctx.textAlign = 'center';
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 6;
+      ctx.strokeText(t.text, W / 2, H / 2 - 10);
+      ctx.fillStyle = t.color;
+      ctx.fillText(t.text, W / 2, H / 2 - 10);
+      ctx.restore();
+    }
+
+    return; // draw already restored above
   }
 }
