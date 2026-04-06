@@ -1,5 +1,6 @@
 // ─── Combat System ───────────────────────────────────────────────────────────
 // Handles hitbox overlap, damage resolution, knockback, and hitstop.
+import { audio } from './audio.js';
 
 export class CombatSystem {
   constructor(game) {
@@ -85,6 +86,13 @@ export class CombatSystem {
         fx.addDamageNum(e.x, e.y - 90, dmg);
         if (heavy) fx.addShake(5, 8);
         else       fx.addShake(2, 4);
+        // Sound
+        const s = player.state;
+        if (s === 'kick1' || s === 'kick2') audio.kick();
+        else if (s === 'jumpAtk')           audio.jumpAtk();
+        else if (heavy)                     audio.punchHeavy();
+        else                                audio.punchLight();
+        audio.enemyHurt();
       }
     }
 
@@ -105,6 +113,9 @@ export class CombatSystem {
         p.dead = true;
         fx.addBreakParticles(p.x, p.y, p.color1, p.color2);
         fx.addShake(4, 8);
+        audio.propBreak();
+      } else {
+        audio.propHit();
       }
     }
   }
@@ -130,6 +141,8 @@ export class CombatSystem {
         fx.addHitSpark(player.x - e.facing * 10, player.y - 40, '#FF3333', 7);
         fx.addDamageNum(player.x, player.y - 100, dmg);
         fx.addShake(3, 6);
+        audio.punchLight();
+        audio.playerHurt();
       }
     }
   }

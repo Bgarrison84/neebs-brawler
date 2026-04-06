@@ -1,4 +1,5 @@
 import { drawBackground } from './sprites/sprites.js';
+import { audio } from './systems/audio.js';
 import { Player } from './entities/player.js';
 import { Enemy }  from './entities/enemy.js';
 import { Prop, Drop } from './entities/prop.js';
@@ -57,10 +58,11 @@ export class Game {
     this.waveState   = 'playing'; // 'playing' | 'wave_clear' | 'game_over'
     this.waveClearT  = 0;
 
-    this.totalScore = 0;
-    this.hitCount   = 0;
-    this.frame      = 0;
-    this.paused     = false;
+    this.totalScore      = 0;
+    this.hitCount        = 0;
+    this.frame           = 0;
+    this.paused          = false;
+    this._prevPlayerState = 'idle';
 
     this._bgCanvas   = document.createElement('canvas');
     this._bgCanvas.width  = this.W;
@@ -115,8 +117,17 @@ export class Game {
       return;
     }
 
+    // Unlock audio on first input
+    audio.unlock();
+
     // Player
     this.player.update(input, ARENA);
+
+    // Jump sound on state transition
+    if (this._prevPlayerState !== 'jump' && this.player.state === 'jump') {
+      audio.jump();
+    }
+    this._prevPlayerState = this.player.state;
 
     // Enemies
     const liveEnemies = this.enemies.filter(e => !e.dead);
@@ -186,6 +197,7 @@ export class Game {
       if (allSpawned && allDead) {
         this.waveState = 'wave_clear';
         this.waveClearT = 180; // 3 seconds
+        audio.waveClear();
       }
     }
 
@@ -199,10 +211,14 @@ export class Game {
       }
     }
 
-    if (this.player.hp <= 0) this.waveState = 'game_over';
+    if (this.player.hp <= 0 && this.waveState !== 'game_over') {
+      this.waveState = 'game_over';
+      audio.gameOver();
+    }
   }
 
   _applyDrop(drop) {
+    audio.pickup();
     switch (drop.type) {
       case 'health': this.player.heal(20); break;
       case 'speed':  this.player.applyBuff('speed'); break;
