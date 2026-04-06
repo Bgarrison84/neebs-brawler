@@ -492,77 +492,171 @@ export function drawPowerDrop(ctx, x, groundY, bobT) {
   ctx.restore();
 }
 
-// ─── BACKGROUND ELEMENTS ────────────────────────────────────────────────────
-export function drawBackground(ctx, W, H) {
-  // Night sky / building silhouettes
+// ─── BACKGROUND ELEMENTS ─────────────────────────────────────────────────────
+// Full scrolling background. camX is camera world offset; parallax layers move
+// at different rates. Zone color themes shift based on camX.
+
+// Building layout spans the full level width (world-space x positions).
+const BG_BUILDINGS = [
+  // Zone 0 — Night Alley (0-800)
+  [0,60,80,120],[70,90,60,90],[125,40,55,140],[175,75,70,110],
+  [240,100,40,80],[275,55,90,125],[360,80,55,100],[410,30,80,150],
+  [485,75,60,105],[540,50,70,130],[605,85,55,95],[655,40,90,140],
+  [740,65,75,115],[810,90,60,90],
+  // Zone 1 — Industrial District (800-1600)
+  [870,30,110,150],[975,60,70,120],[1040,20,90,160],[1125,50,80,130],
+  [1200,70,60,110],[1255,35,100,145],[1350,55,75,125],[1420,40,85,140],
+  [1500,65,60,115],[1555,80,70,100],
+  // Zone 2 — Downtown Neon (1600-2400)
+  [1620,25,100,165],[1715,45,80,135],[1790,60,90,140],[1875,30,110,160],
+  [1980,50,70,130],[2045,35,85,155],[2125,65,75,125],[2195,20,95,170],
+  [2285,55,80,135],[2360,40,90,145],
+];
+
+const BG_WINDOWS = [
+  // Zone 0
+  [15,80],[15,100],[40,80],[40,100],[135,60],[135,90],[285,70],[285,100],
+  [420,50],[420,80],[550,65],[550,95],[665,55],[665,85],[750,80],[750,110],
+  // Zone 1
+  [885,40],[885,70],[1000,65],[1000,95],[1055,30],[1055,60],[1140,55],
+  [1210,75],[1265,45],[1265,75],[1365,60],[1365,90],[1435,50],[1435,80],
+  [1510,70],[1560,85],
+  // Zone 2
+  [1635,35],[1635,65],[1730,50],[1730,80],[1800,65],[1800,95],[1890,40],
+  [1890,70],[1995,55],[2060,45],[2060,75],[2135,70],[2200,30],[2200,60],
+  [2295,65],[2370,50],[2370,80],
+];
+
+// Neon sign positions [x, y, w, h, color] for zone 2
+const NEON_SIGNS = [
+  [1650,90,60,14,'#FF44AA'],[1760,70,80,14,'#44FFCC'],
+  [1850,85,70,14,'#FFAA00'],[1960,75,50,14,'#FF4488'],
+  [2070,90,80,14,'#44AAFF'],[2160,65,60,14,'#FF44AA'],
+  [2240,80,90,14,'#AAFFAA'],[2330,70,70,14,'#FF8844'],
+];
+
+export function drawBackground(ctx, W, H, camX = 0) {
+  // Zone blend: 0=alley, 1=industrial, 2=downtown
+  const zone = Math.min(2, Math.floor(camX / 750));
+  const zoneT = (camX % 750) / 750; // 0→1 within zone
+
+  // ── Sky gradient (zone-tinted) ──
+  const skyColors = [
+    ['#080014', '#160028'], // zone 0: deep purple night
+    ['#140800', '#281400'], // zone 1: dark orange industrial
+    ['#001420', '#002840'], // zone 2: dark teal neon night
+  ];
+  const [skyTop, skyBot] = skyColors[zone];
   const grad = ctx.createLinearGradient(0, 0, 0, 180);
-  grad.addColorStop(0, '#0a0010');
-  grad.addColorStop(1, '#1a0030');
+  grad.addColorStop(0, skyTop);
+  grad.addColorStop(1, skyBot);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, 180);
 
-  // Building silhouettes
-  ctx.fillStyle = '#0d0020';
-  const buildings = [
-    [0, 60, 80, 120], [70, 90, 60, 90], [120, 40, 50, 140],
-    [160, 70, 70, 110], [220, 100, 40, 80], [250, 55, 90, 125],
-    [330, 80, 50, 100], [370, 30, 80, 150], [440, 75, 60, 105],
-    [490, 50, 70, 130], [550, 85, 60, 95], [600, 40, 90, 140],
-    [680, 65, 75, 115], [740, 90, 60, 90],
-  ];
-  buildings.forEach(([bx, by, bw, bh]) => ctx.fillRect(bx, by, bw, bh));
+  // ── Far buildings (parallax 0.4x) ──
+  const px04 = camX * 0.4;
+  const bldgColor = zone === 0 ? '#0d0022' : zone === 1 ? '#180800' : '#001a28';
+  ctx.fillStyle = bldgColor;
+  for (const [bx, by, bw, bh] of BG_BUILDINGS) {
+    const sx = bx - px04;
+    if (sx + bw > -10 && sx < W + 10) ctx.fillRect(sx, by, bw, bh);
+  }
 
-  // Building windows (random lights)
-  ctx.fillStyle = '#FFEE88';
-  const windows = [
-    [15,80],[15,100],[15,120],[40,80],[40,100],[40,120],
-    [130,60],[130,90],[155,60],[155,90],[155,120],
-    [265,70],[265,100],[290,70],[290,100],[290,130],
-    [385,50],[385,80],[385,110],[410,50],[410,80],
-    [500,65],[500,95],[525,65],[525,95],[525,125],
-    [615,55],[615,85],[615,115],[645,55],[645,85],
-    [695,80],[695,110],[720,80],[720,110],
-  ];
-  windows.forEach(([wx, wy]) => ctx.fillRect(wx, wy, 6, 5));
+  // ── Windows (parallax 0.4x) ──
+  const winColor = zone === 1 ? '#FFCC44' : '#FFEE88';
+  ctx.fillStyle = winColor;
+  for (const [wx, wy] of BG_WINDOWS) {
+    const sx = wx - px04;
+    if (sx > -8 && sx < W + 8) ctx.fillRect(sx, wy, 6, 5);
+  }
 
-  // Arena floor (alley / street)
+  // Zone 2 neon signs (parallax 0.4x)
+  if (zone >= 2 || (zone === 1 && zoneT > 0.7)) {
+    for (const [nx, ny, nw, nh, nc] of NEON_SIGNS) {
+      const sx = nx - px04;
+      if (sx + nw > 0 && sx < W) {
+        ctx.save();
+        ctx.shadowColor = nc;
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = nc;
+        ctx.globalAlpha = 0.85;
+        ctx.fillRect(sx, ny, nw, nh);
+        ctx.globalAlpha = 0.3;
+        ctx.fillRect(sx, ny + nh, nw, 4); // reflection
+        ctx.restore();
+      }
+    }
+  }
+
+  // Zone 1 industrial elements (parallax 0.4x)
+  if (zone >= 1) {
+    ctx.save();
+    ctx.fillStyle = '#FF6600';
+    ctx.globalAlpha = 0.6;
+    // Fire barrels (static decorative)
+    for (const bx of [920, 1100, 1300, 1450]) {
+      const sx = bx - px04;
+      if (sx > -20 && sx < W + 20) {
+        ctx.fillRect(sx - 8, 152, 16, 24); // barrel
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.arc(sx, 150, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.4;
+      }
+    }
+    ctx.restore();
+  }
+
+  // ── Back wall (near parallax 0.85x) ──
+  const px085 = camX * 0.85;
+  const wallColor = zone === 0 ? '#0d0025' : zone === 1 ? '#1a0800' : '#001825';
+  const wallAccent = zone === 0 ? '#FF6B3522' : zone === 1 ? '#FF660022' : '#44FFCC22';
+  rect(ctx, wallColor, 0, 175, W, 20);
+  ctx.strokeStyle = wallAccent;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(0, 175, W, 20);
+
+  // ── Arena floor ──
+  const floorColors = [
+    ['#1a1a2e','#16213e','#0f1c35'],
+    ['#2a1a0e','#221408','#180e04'],
+    ['#0a1a22','#081820','#041018'],
+  ];
+  const [f0, f1, f2] = floorColors[zone];
   const floorGrad = ctx.createLinearGradient(0, 180, 0, H);
-  floorGrad.addColorStop(0, '#1a1a2e');
-  floorGrad.addColorStop(0.3, '#16213e');
-  floorGrad.addColorStop(1, '#0f1c35');
+  floorGrad.addColorStop(0, f0);
+  floorGrad.addColorStop(0.3, f1);
+  floorGrad.addColorStop(1, f2);
   ctx.fillStyle = floorGrad;
   ctx.fillRect(0, 180, W, H - 180);
 
-  // Perspective floor grid lines (depth lines)
-  ctx.strokeStyle = '#ffffff08';
+  // ── Perspective floor grid ──
+  const gridColor = zone === 1 ? '#ff660008' : zone === 2 ? '#44ffcc08' : '#ffffff08';
+  ctx.strokeStyle = gridColor;
   ctx.lineWidth = 1;
   const vanishX = W / 2, vanishY = 195;
   for (let i = 0; i <= 12; i++) {
     const bx = (W / 12) * i;
-    ctx.beginPath();
-    ctx.moveTo(vanishX, vanishY);
-    ctx.lineTo(bx, H);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(vanishX, vanishY); ctx.lineTo(bx, H); ctx.stroke();
   }
-  // Horizontal lines
   for (let i = 0; i < 6; i++) {
     const ly = 220 + i * 62;
-    ctx.beginPath();
-    ctx.moveTo(0, ly);
-    ctx.lineTo(W, ly);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, ly); ctx.lineTo(W, ly); ctx.stroke();
   }
 
-  // Wall at back of arena
-  rect(ctx, '#0d0025', 0, 175, W, 20);
-  outline(ctx, '#FF6B3533', 0, 175, W, 20, 2);
-
-  // Street cracks
-  ctx.strokeStyle = '#ffffff05';
+  // Floor decals (zone-specific, near parallax 1.0x — world space)
+  const nearOff = camX * 1.0;
+  ctx.save();
+  ctx.strokeStyle = '#ffffff04';
   ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(120, 280); ctx.lineTo(200, 380); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(550, 300); ctx.lineTo(620, 420); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(320, 250); ctx.lineTo(350, 340); ctx.stroke();
+  for (const cx of [120,320,550,750,920,1100,1350,1550,1700,1950,2200]) {
+    const sx = cx - nearOff;
+    if (sx > -20 && sx < W + 20) {
+      ctx.beginPath(); ctx.moveTo(sx, 260); ctx.lineTo(sx + 60, 390); ctx.stroke();
+    }
+  }
+  ctx.restore();
 }
 
 // ─── SIMON ──────────────────────────────────────────────────────────────────

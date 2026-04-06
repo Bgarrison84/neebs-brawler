@@ -6,18 +6,19 @@ import { Prop, Drop } from './entities/prop.js';
 import { CombatSystem } from './systems/combat.js';
 import { FxSystem }     from './systems/fx.js';
 
-// ─── Arena coordinate space ───────────────────────────────────────────────────
-// worldX: 50-750  worldY: 0-280 (depth)
-// screenX = worldX  screenY = 200 + worldY * 1.18
-const ARENA = {
-  xMin: 60, xMax: 740,
-  yMin: 0,  yMax: 280,
-  screenTop: 200,
-  depthScale: 1.18,
-};
+// ─── Level / Arena constants ──────────────────────────────────────────────────
+const SCREEN_TOP   = 200;
+const DEPTH_SCALE  = 1.18;
+const ARENA_Y_MIN  = 0;
+const ARENA_Y_MAX  = 280;
+const ARENA_X_MIN  = 60;
+const TOTAL_WIDTH  = 2250; // full level width
 
-function toScreen(wx, wy) {
-  return { sx: wx, sy: ARENA.screenTop + wy * ARENA.depthScale };
+// Zone right-edge boundaries (x where camera/player are blocked until clear)
+const ZONE_BOUNDS  = [750, 1500, 2250];
+
+function toScreen(wx, wy, camX = 0) {
+  return { sx: wx - camX, sy: SCREEN_TOP + wy * DEPTH_SCALE };
 }
 
 
@@ -58,29 +59,34 @@ export class Game {
     this.knives  = [];
 
     this.waveIdx     = 0;
-    this.waveSpawns  = [];  // pending spawns: {type, countdown}
-    this.waveState   = 'playing'; // 'playing' | 'wave_clear' | 'game_over'
+    this.waveSpawns  = [];
+    this.waveState   = 'playing';
     this.waveClearT  = 0;
 
-    this.totalScore      = 0;
-    this.hitCount        = 0;
-    this.frame           = 0;
-    this.paused          = false;
+    this.totalScore       = 0;
+    this.hitCount         = 0;
+    this.frame            = 0;
+    this.paused           = false;
     this._prevPlayerState = 'idle';
 
-    this._toScreen = toScreen;
-
-    this._bgCanvas   = document.createElement('canvas');
-    this._bgCanvas.width  = this.W;
-    this._bgCanvas.height = this.H;
-    drawBackground(this._bgCanvas.getContext('2d'), this.W, this.H);
+    // Camera + zone
+    this.camX          = 0;
+    this.zoneIdx       = 0;  // which zone we're in (0,1,2)
+    this.zoneBoundary  = ZONE_BOUNDS[0]; // right-edge player can't pass yet
+    this.advancing     = false; // show "ADVANCE!" banner
 
     this._spawnProps();
     this._loadWave(0);
   }
 
   _spawnProps() {
-    this.props = PROP_LAYOUT.map(p => new Prop(p.type, p.x, p.y));
+    // Spawn props within the current zone's x range
+    const zoneXMin = this.zoneIdx === 0 ? 0 : ZONE_BOUNDS[this.zoneIdx - 1];
+    const zoneXMax = ZONE_BOUNDS[this.zoneIdx];
+    this.props = PROP_LAYOUT.map(p => {
+      const wx = zoneXMin + 60 + (p.x / 740) * (zoneXMax - zoneXMin - 120);
+      return new Prop(p.type, wx, p.y);
+    });
   }
 
   _loadWave(idx) {
@@ -96,9 +102,12 @@ export class Game {
   }
 
   _spawnEnemy(type) {
+    // Spawn from zone edges
+    const zoneXMin = this.zoneIdx === 0 ? ARENA_X_MIN : ZONE_BOUNDS[this.zoneIdx - 1] + 20;
+    const zoneXMax = ZONE_BOUNDS[this.zoneIdx] - 20;
     const side = Math.random() > 0.5 ? 1 : -1;
-    const x = side > 0 ? ARENA.xMax - 10 : ARENA.xMin + 10;
-    const y = ARENA.yMin + 30 + Math.random() * (ARENA.yMax - 60);
+    const x = side > 0 ? zoneXMax : zoneXMin;
+    const y = ARENA_Y_MIN + 30 + Math.random() * (ARENA_Y_MAX - 60);
     const e = new Enemy(type, x, y);
     e.facing = side > 0 ? -1 : 1;
     // Give knife throwers their throw callback
@@ -132,8 +141,16 @@ export class Game {
     // Unlock audio on first input
     audio.unlock();
 
+    // Dynamic bounds (right wall = zone boundary)
+    const bounds = {
+      xMin: ARENA_X_MIN,
+      xMax: this.zoneBoundary - 20,
+      yMin: ARENA_Y_MIN,
+      yMax: ARENA_Y_MAX,
+    };
+
     // Player
-    this.player.update(input, ARENA);
+    this.player.update(input, bounds);
 
     // Jump sound on state transition
     if (this._prevPlayerState !== 'jump' && this.player.state === 'jump') {
@@ -147,9 +164,17 @@ export class Game {
       this._executeSuper();
     }
 
+    // Camera — lerp toward player, bounded by zone and level
+    const camTarget = Math.max(0, Math.min(
+      this.player.x - this.W / 2,
+      this.zoneBoundary - this.W   // can't show past zone boundary while locked
+    ));
+    this.camX += (camTarget - this.camX) * 0.1;
+    this.camX = Math.max(0, Math.min(this.camX, TOTAL_WIDTH - this.W));
+
     // Enemies
     const liveEnemies = this.enemies.filter(e => !e.dead);
-    for (const e of liveEnemies) e.update(this.player, liveEnemies, ARENA);
+    for (const e of liveEnemies) e.update(this.player, liveEnemies, bounds);
     this.enemies = this.enemies.filter(e => !e.dead || e.state === 'die');
 
     // Clear per-swing hit flags each frame
@@ -232,21 +257,37 @@ export class Game {
 
     // Wave clear check
     if (this.waveState === 'playing') {
-      const allSpawned  = this.waveSpawns.length === 0;
-      const allDead     = this.enemies.every(e => e.hp <= 0 || e.dead);
+      const allSpawned = this.waveSpawns.length === 0;
+      const allDead    = this.enemies.every(e => e.hp <= 0 || e.dead);
       if (allSpawned && allDead) {
-        this.waveState = 'wave_clear';
-        this.waveClearT = 180; // 3 seconds
+        this.waveState  = 'wave_clear';
+        this.waveClearT = 200;
         audio.waveClear();
+        // Unlock next zone if there is one
+        if (this.zoneIdx < ZONE_BOUNDS.length - 1) {
+          this.zoneIdx++;
+          this.zoneBoundary = ZONE_BOUNDS[this.zoneIdx];
+          this.advancing = true;
+        }
       }
     }
 
     if (this.waveState === 'wave_clear') {
       this.waveClearT--;
+      if (this.advancing) {
+        // Camera can now fully follow player into new zone
+        const fullTarget = Math.max(0, Math.min(
+          this.player.x - this.W / 2,
+          TOTAL_WIDTH - this.W
+        ));
+        this.camX += (fullTarget - this.camX) * 0.08;
+      }
       if (this.waveClearT <= 0) {
+        this.advancing = false;
         this.waveIdx++;
         this.enemies = [];
-        this._spawnProps(); // respawn props each wave
+        this.knives  = [];
+        this._spawnProps();
         this._loadWave(this.waveIdx);
       }
     }
@@ -316,7 +357,7 @@ export class Game {
       this.fx.addScreenFlash('#44AAFF', 0.5);
       this.fx.addSuperText('SCIENCE!', '#44AAFF');
       this.fx.addShake(14, 24);
-      const { sx: px, sy: py } = this._toScreen(this.player.x, this.player.y);
+      const { sx: px, sy: py } = toScreen(this.player.x, this.player.y, this.camX);
       this.fx.addShockwave(px, py - 40, 320, '#44AAFF');
       this.fx.addShockwave(px, py - 40, 200, '#FFFFFF');
       this.fx.addShockwave(px, py,      120, '#88DDFF');
@@ -341,7 +382,7 @@ export class Game {
       this.fx.addScreenFlash('#FFAA44', 0.55);
       this.fx.addSuperText('GROUND POUND!', '#FFAA44');
       this.fx.addShake(18, 28);
-      const { sx: px, sy: py } = this._toScreen(this.player.x, this.player.y);
+      const { sx: px, sy: py } = toScreen(this.player.x, this.player.y, this.camX);
       // Ground-level shockwaves (horizontal)
       for (let i = 1; i <= 3; i++) {
         this.fx.addShockwave(px, py, 100 * i, '#FFAA44');
@@ -367,11 +408,17 @@ export class Game {
   }
 
   draw() {
-    const ctx = this.ctx;
+    const ctx  = this.ctx;
+    const camX = this.camX;
     ctx.clearRect(0, 0, this.W, this.H);
-    ctx.drawImage(this._bgCanvas, 0, 0);
 
-    // Draw order: sort all visible entities by worldY (painter's algorithm)
+    // Dynamic scrolling background
+    drawBackground(ctx, this.W, this.H, camX);
+
+    // Camera-relative toScreen
+    const screen = (wx, wy) => toScreen(wx, wy, camX);
+
+    // Draw order: sort by worldY (painter's algorithm)
     const drawList = [
       ...this.props.filter(p => !p.dead),
       ...this.drops,
@@ -379,10 +426,10 @@ export class Game {
       this.player,
     ].sort((a, b) => a.y - b.y);
 
-    for (const e of drawList) e.draw(ctx, toScreen);
+    for (const e of drawList) e.draw(ctx, screen);
 
-    // Knives (drawn above entities)
-    for (const k of this.knives) k.draw(ctx, toScreen);
+    // Knives
+    for (const k of this.knives) k.draw(ctx, screen);
 
     // FX layer
     this.fx.draw(ctx);
@@ -430,11 +477,12 @@ export class Game {
     ctx.fillStyle = '#AA8800';
     ctx.fillText('SCORE', W - 20, 18);
 
-    // Wave counter
+    // Wave + zone
+    const zoneNames = ['ALLEY', 'WAREHOUSE', 'DOWNTOWN'];
     ctx.textAlign = 'center';
     ctx.font = 'bold 13px Courier New';
     ctx.fillStyle = '#CCCCCC';
-    ctx.fillText(`WAVE ${this.waveIdx + 1}`, W / 2, 20);
+    ctx.fillText(`WAVE ${this.waveIdx + 1}  ·  ${zoneNames[Math.min(this.zoneIdx, 2)]}`, W / 2, 20);
 
     // Enemy count
     const living = this.enemies.filter(e => e.hp > 0).length;
@@ -495,22 +543,31 @@ export class Game {
 
   _drawWaveClear(ctx) {
     const W = this.W, H = this.H;
-    const alpha = Math.min(1, (180 - this.waveClearT) / 30) * Math.min(1, this.waveClearT / 30);
+    const alpha = Math.min(1, (200 - this.waveClearT) / 30) * Math.min(1, this.waveClearT / 30);
     ctx.save();
     ctx.globalAlpha = alpha * 0.85;
     ctx.fillStyle = '#000';
-    ctx.fillRect(W/2 - 200, H/2 - 50, 400, 100);
+    ctx.fillRect(W/2 - 220, H/2 - 50, 440, 100);
     ctx.globalAlpha = alpha;
     ctx.font = 'bold 40px Courier New';
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#FFD700';
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 4;
-    ctx.strokeText('WAVE CLEAR!', W/2, H/2 + 8);
-    ctx.fillText('WAVE CLEAR!', W/2, H/2 + 8);
-    ctx.font = 'bold 18px Courier New';
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(`WAVE ${this.waveIdx + 1} INCOMING...`, W/2, H/2 + 36);
+    if (this.advancing) {
+      ctx.fillStyle = '#00FF88';
+      ctx.strokeText('AREA CLEAR!', W/2, H/2 + 8);
+      ctx.fillText('AREA CLEAR!', W/2, H/2 + 8);
+      ctx.font = 'bold 18px Courier New';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText('MOVE FORWARD →', W/2, H/2 + 36);
+    } else {
+      ctx.fillStyle = '#FFD700';
+      ctx.strokeText('WAVE CLEAR!', W/2, H/2 + 8);
+      ctx.fillText('WAVE CLEAR!', W/2, H/2 + 8);
+      ctx.font = 'bold 18px Courier New';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(`WAVE ${this.waveIdx + 1} INCOMING...`, W/2, H/2 + 36);
+    }
     ctx.restore();
   }
 
