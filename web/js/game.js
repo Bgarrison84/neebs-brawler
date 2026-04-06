@@ -233,8 +233,8 @@ export class Game {
     if (id === 'neebs') {
       // "DUDE!" — scream stun: all enemies stunned + 25 damage
       audio.neebsSuper();
-      this.fx.addScreenFlash('#FF6B35', 0.5);
-      this.fx.addSuperText('DUDE!', '#FF6B35');
+      this.fx.addScreenFlash('#00FF44', 0.5);
+      this.fx.addSuperText('DUDE!', '#00FF44');
       this.fx.addShake(10, 20);
       for (const e of liveEnemies) {
         e.hp = Math.max(0, e.hp - 25);
