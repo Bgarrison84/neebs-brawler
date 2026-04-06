@@ -215,6 +215,160 @@ export function drawHeavyGoon(ctx, x, groundY, facing, state, animT, z = 0, hp =
   ctx.restore();
 }
 
+// ─── KNIFE THROWER ──────────────────────────────────────────────────────────
+// Skinny guy in a trench coat — throws knives from a distance
+export function drawKnifeThrower(ctx, x, groundY, facing, state, animT, z = 0, hp = 1, maxHp = 1) {
+  const sy = groundY - z;
+  shadow(ctx, x, groundY, 14);
+  ctx.save();
+  setFlip(ctx, x, facing);
+
+  const isThrow = state === 'attack';
+  const throwT  = isThrow ? Math.min(animT * 2, 1) : 0;
+
+  // Dark boots
+  rect(ctx, '#111111', x - 10, sy - 8,  9, 8);
+  rect(ctx, '#111111', x + 1,  sy - 8,  9, 8);
+
+  // Skinny dark pants
+  rect(ctx, '#2a2a2a', x - 9, sy - 36, 7, 28);
+  rect(ctx, '#2a2a2a', x + 2, sy - 36, 7, 28);
+
+  // Trench coat (dark olive/brown — slim)
+  rect(ctx, '#4a4a2a', x - 13, sy - 74, 26, 42);
+  rect(ctx, '#3a3a1a', x - 13, sy - 74, 5, 42); // left fold
+  rect(ctx, '#5a5a3a', x - 3,  sy - 74, 6, 42); // center highlight
+  // Belt
+  rect(ctx, '#8B7355', x - 13, sy - 52, 26, 4);
+
+  // Arms (slim)
+  rect(ctx, '#4a4a2a', x - 18, sy - 70, 7, 26);
+  rect(ctx, '#4a4a2a', x + 11, sy - 70, 7, isThrow ? 18 : 26);
+
+  // Throwing arm extended
+  if (isThrow) {
+    rect(ctx, '#4a4a2a', x + 11, sy - 52, throwT * 20, 7);
+    // Knife (silver)
+    const kx = x + 11 + throwT * 20;
+    rect(ctx, '#CCCCCC', kx, sy - 54, 14, 3);
+    rect(ctx, '#AAAAAA', kx + 10, sy - 56, 4, 7); // handle
+  }
+
+  // Head
+  rect(ctx, '#FDBCB4', x - 10, sy - 90, 20, 18);
+
+  // Slicked dark hair + stubble
+  rect(ctx, '#1a1a1a', x - 10, sy - 90, 20, 7);
+  rect(ctx, '#111111', x - 11, sy - 89,  3, 10);
+  // Stubble shadow on face
+  ctx.globalAlpha = 0.3;
+  rect(ctx, '#555', x - 8, sy - 78, 16, 6);
+  ctx.globalAlpha = 1;
+
+  // Eyes (shifty)
+  rect(ctx, '#1a1a1a', x - 7, sy - 80, 4, 3);
+  rect(ctx, '#1a1a1a', x + 3, sy - 80, 4, 3);
+
+  // HP bar
+  const barW = 28, barH = 4;
+  const bx = x - 14, by = sy - 102;
+  rect(ctx, '#330000', bx, by, barW, barH);
+  rect(ctx, '#FF6633', bx, by, Math.floor(barW * (hp / maxHp)), barH);
+
+  if (state === 'hurt') {
+    ctx.globalAlpha = 0.5;
+    rect(ctx, '#FFFFFF', x - 13, sy - 92, 26, 92);
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+// Knife projectile
+export function drawKnife(ctx, x, groundY, angle = 0) {
+  const sy = groundY;
+  ctx.save();
+  ctx.translate(x, sy - 30);
+  ctx.rotate(angle);
+  rect(ctx, '#CCCCCC', -10, -2, 20, 4);
+  rect(ctx, '#AAAAAA', 8, -3, 4, 6);
+  rect(ctx, '#DDDDDD', -12, -1, 4, 2);
+  ctx.restore();
+}
+
+// ─── BIKER ──────────────────────────────────────────────────────────────────
+// Stocky biker in leather jacket — fast charging attack
+export function drawBiker(ctx, x, groundY, facing, state, animT, z = 0, hp = 1, maxHp = 1) {
+  const sy = groundY - z;
+  shadow(ctx, x, groundY, 20);
+  ctx.save();
+  setFlip(ctx, x, facing);
+
+  const isCharge = state === 'attack';
+  const chargeLean = isCharge ? 10 : 0;
+
+  // Biker boots (heavy)
+  rect(ctx, '#2a1a0a', x - 14, sy - 10, 13, 10);
+  rect(ctx, '#2a1a0a', x + 1,  sy - 10, 13, 10);
+  rect(ctx, '#1a1208', x - 15, sy - 12, 15, 4);
+  rect(ctx, '#1a1208', x + 0,  sy - 12, 15, 4);
+
+  // Jeans
+  rect(ctx, '#334499', x - 12, sy - 40, 11, 30);
+  rect(ctx, '#4455AA', x + 1,  sy - 40, 11, 30);
+  // Chain detail on jeans
+  rect(ctx, '#AAAAAA', x - 12, sy - 26, 10, 2);
+
+  // Black leather jacket
+  rect(ctx, '#1a1a1a', x - 16, sy - 72, 32, 36);
+  rect(ctx, '#2a2a2a', x - 6,  sy - 72, 12, 36); // center panel
+  // Jacket details — studs
+  rect(ctx, '#888888', x - 14, sy - 70, 3, 3);
+  rect(ctx, '#888888', x + 11, sy - 70, 3, 3);
+  rect(ctx, '#888888', x - 14, sy - 62, 3, 3);
+  rect(ctx, '#888888', x + 11, sy - 62, 3, 3);
+  // Skull patch
+  rect(ctx, '#FFFFFF', x - 5, sy - 58, 10, 10);
+  rect(ctx, '#1a1a1a', x - 3, sy - 54, 6, 4);
+  rect(ctx, '#FFFFFF', x - 4, sy - 56, 3, 3);
+  rect(ctx, '#FFFFFF', x + 1, sy - 56, 3, 3);
+
+  // Arms (thick leather)
+  rect(ctx, '#1a1a1a', x - 23, sy - 68, 9, 28 + (isCharge ? 0 : Math.sin(animT * Math.PI * 2) * 5));
+  rect(ctx, '#1a1a1a', x + 14, sy - 68 - chargeLean, 9, 28);
+  // Charge fist
+  if (isCharge) {
+    rect(ctx, '#FDBCB4', x + 20, sy - 56, 12, 12);
+  }
+
+  // Head (bandana + shades)
+  rect(ctx, '#FDBCB4', x - 12, sy - 90, 24, 20);
+  // Bandana (red)
+  rect(ctx, '#CC0000', x - 12, sy - 90, 24, 9);
+  rect(ctx, '#AA0000', x - 13, sy - 90, 3, 12); // tied knot left
+  // Shades
+  rect(ctx, '#111111', x - 9, sy - 80, 7, 5);
+  rect(ctx, '#111111', x + 2, sy - 80, 7, 5);
+  rect(ctx, '#333333', x - 2, sy - 80, 4, 3); // bridge
+  // Stubble
+  ctx.globalAlpha = 0.4;
+  rect(ctx, '#555', x - 8, sy - 70, 16, 8);
+  ctx.globalAlpha = 1;
+
+  // HP bar
+  const barW = 34, barH = 5;
+  const bx = x - 17, by = sy - 104;
+  rect(ctx, '#330000', bx, by, barW, barH);
+  rect(ctx, '#FF4400', bx, by, Math.floor(barW * (hp / maxHp)), barH);
+  outline(ctx, '#550000', bx, by, barW, barH, 1);
+
+  if (state === 'hurt') {
+    ctx.globalAlpha = 0.5;
+    rect(ctx, '#FFFFFF', x - 16, sy - 92, 32, 92);
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
 // ─── PROPS ──────────────────────────────────────────────────────────────────
 export function drawTrashcan(ctx, x, groundY, hp, maxHp) {
   const sy = groundY;
@@ -409,6 +563,253 @@ export function drawBackground(ctx, W, H) {
   ctx.beginPath(); ctx.moveTo(120, 280); ctx.lineTo(200, 380); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(550, 300); ctx.lineTo(620, 420); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(320, 250); ctx.lineTo(350, 340); ctx.stroke();
+}
+
+// ─── SIMON ──────────────────────────────────────────────────────────────────
+// Lean/fast attacker — backwards red cap, spiky hair, green hoodie, blue shorts
+export function drawSimon(ctx, x, groundY, facing, state, animT, z = 0) {
+  const sy = groundY - z;
+  shadow(ctx, x, groundY, 16);
+  ctx.save();
+  setFlip(ctx, x, facing);
+
+  const isPunch = state === 'punch1' || state === 'punch2' || state === 'punch3';
+  const isKick  = state === 'kick1'  || state === 'kick2';
+  const walkBob = state === 'walk' ? Math.sin(animT * Math.PI * 2) * 7 : 0;
+  const punchExt = isPunch ? Math.min(animT * 2.5, 1) * 16 : 0; // snappy fast
+  const kickExt  = isKick  ? Math.min(animT * 2.0, 1) * 18 : 0;
+
+  // White sneakers (narrow)
+  rect(ctx, '#FFFFFF', x - 10, sy - 8,  9, 8);
+  rect(ctx, '#FFFFFF', x + 1,  sy - 8,  9, 8);
+  rect(ctx, '#AAAAAA', x - 11, sy - 10, 11, 3);
+  rect(ctx, '#AAAAAA', x,      sy - 10, 11, 3);
+
+  // Light blue shorts (short, lean legs)
+  rect(ctx, '#6699FF', x - 9, sy - 30, 8, 22);
+  rect(ctx, '#5588EE', x + 1, sy - 30, 8, 22);
+
+  // Green hoodie body (slim)
+  rect(ctx, '#22AA44', x - 13, sy - 60, 26, 34);
+  rect(ctx, '#1A8836', x - 13, sy - 60, 5, 34); // left shading
+  // Small pocket
+  rect(ctx, '#1A8836', x - 5, sy - 44, 10, 8);
+  rect(ctx, '#22AA44', x - 4, sy - 43, 8, 6);
+
+  // Arms (slim + fast)
+  rect(ctx, '#22AA44', x - 17, sy - 56, 6, 22 + walkBob);
+  rect(ctx, '#22AA44', x + 11, sy - 56, 6, 22 - kickExt);
+
+  // Punch fist (snaps out fast)
+  if (isPunch) {
+    rect(ctx, '#22AA44', x + 11, sy - 46, punchExt, 6);
+    rect(ctx, '#FDBCB4', x + 11 + punchExt, sy - 50, 10, 10);
+  }
+
+  // Kick (fast, high)
+  if (isKick) {
+    const kx = x + 8  + 24 * Math.min(animT * 1.5, 1);
+    const ky = sy - 22 - kickExt;
+    rect(ctx, '#6699FF', kx, ky - 8, 14, 14);
+    rect(ctx, '#FFFFFF', kx + 2, ky, 12, 8);
+  }
+
+  // Head (skin, lean)
+  rect(ctx, '#FDBCB4', x - 10, sy - 80, 20, 22);
+
+  // Spiky dark hair peeking under cap
+  rect(ctx, '#2a1a0a', x - 10, sy - 80, 20, 8);
+  rect(ctx, '#1a0e04', x - 4,  sy - 84, 4, 6); // spike left
+  rect(ctx, '#1a0e04', x + 2,  sy - 84, 4, 5); // spike mid
+  rect(ctx, '#1a0e04', x + 7,  sy - 83, 3, 4); // spike right
+
+  // Red cap (backwards — brim at back)
+  rect(ctx, '#CC2200', x - 10, sy - 82, 20, 8); // cap body
+  rect(ctx, '#AA1100', x - 14, sy - 80, 5, 4);  // brim going back (left)
+  // Cap button on top
+  rect(ctx, '#AA1100', x - 2, sy - 85, 4, 4);
+
+  // Eyes (energetic)
+  rect(ctx, '#1a1a1a', x - 6, sy - 70, 4, 5);
+  rect(ctx, '#1a1a1a', x + 2, sy - 70, 4, 5);
+  rect(ctx, '#FFFFFF', x - 5, sy - 69, 2, 2);
+  rect(ctx, '#FFFFFF', x + 3, sy - 69, 2, 2);
+  // Grin
+  rect(ctx, '#CC7755', x - 4, sy - 62, 8, 2);
+  rect(ctx, '#FFFFFF', x - 3, sy - 61, 6, 1);
+
+  if (state === 'hurt') {
+    ctx.globalAlpha = 0.5;
+    rect(ctx, '#FFFFFF', x - 13, sy - 82, 26, 82);
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+// ─── DORA ───────────────────────────────────────────────────────────────────
+// Agile counter-fighter — purple jacket, black leggings, dark ponytail
+export function drawDora(ctx, x, groundY, facing, state, animT, z = 0) {
+  const sy = groundY - z;
+  shadow(ctx, x, groundY, 18);
+  ctx.save();
+  setFlip(ctx, x, facing);
+
+  const isPunch = state === 'punch1' || state === 'punch2' || state === 'punch3';
+  const isKick  = state === 'kick1'  || state === 'kick2';
+  const walkBob = state === 'walk' ? Math.sin(animT * Math.PI * 2) * 7 : 0;
+  const punchExt = isPunch ? Math.min(animT * 2, 1) * 15 : 0;
+  const kickExt  = isKick  ? Math.min(animT * 1.6, 1) * 20 : 0;
+
+  // White sneakers
+  rect(ctx, '#FFFFFF', x - 11, sy - 8,  10, 8);
+  rect(ctx, '#FFFFFF', x + 1,  sy - 8,  10, 8);
+  rect(ctx, '#CCCCCC', x - 12, sy - 10, 12, 3);
+  rect(ctx, '#CCCCCC', x,      sy - 10, 12, 3);
+
+  // Black leggings
+  rect(ctx, '#111111', x - 10, sy - 36, 9, 28);
+  rect(ctx, '#1a1a1a', x + 1,  sy - 36, 9, 28);
+
+  // Purple jacket (athletic cut)
+  rect(ctx, '#8844CC', x - 14, sy - 68, 28, 36);
+  rect(ctx, '#6633AA', x - 14, sy - 68, 6, 36); // left panel
+  rect(ctx, '#6633AA', x + 8,  sy - 68, 6, 36); // right panel
+  // Jacket zipper
+  rect(ctx, '#AAAAAA', x - 1, sy - 68, 2, 30);
+  // Collar
+  rect(ctx, '#5522AA', x - 6, sy - 68, 12, 6);
+
+  // Arms
+  rect(ctx, '#8844CC', x - 20, sy - 64, 8, 26 + walkBob);
+  rect(ctx, '#8844CC', x + 12, sy - 64, 8, 26 - kickExt);
+
+  // Punch fist
+  if (isPunch) {
+    rect(ctx, '#8844CC', x + 12, sy - 52, punchExt, 8);
+    rect(ctx, '#FDBCB4', x + 12 + punchExt, sy - 56, 10, 10);
+  }
+
+  // Kick
+  if (isKick) {
+    const kx = x + 8 + 22 * Math.min(animT * 1.4, 1);
+    const ky = sy - 26 - kickExt;
+    rect(ctx, '#111111', kx, ky - 8, 14, 16);
+    rect(ctx, '#FFFFFF', kx + 2, ky, 12, 8);
+  }
+
+  // Head
+  rect(ctx, '#FDBCB4', x - 11, sy - 90, 22, 24);
+
+  // Dark hair (bun/ponytail base)
+  rect(ctx, '#1a1210', x - 11, sy - 90, 22, 10);
+  rect(ctx, '#111010', x - 12, sy - 88,  4, 14); // left side
+  // Ponytail (goes to the right — back of head)
+  rect(ctx, '#1a1210', x - 15, sy - 88, 4, 18); // ponytail body
+  rect(ctx, '#111010', x - 16, sy - 85, 3, 12); // ponytail detail
+  rect(ctx, '#CC4488', x - 15, sy - 80, 4, 4);  // hair tie (pink)
+
+  // Eyes (sharp, focused)
+  rect(ctx, '#1a1a1a', x - 7, sy - 78, 5, 4);
+  rect(ctx, '#1a1a1a', x + 2, sy - 78, 5, 4);
+  rect(ctx, '#FFFFFF', x - 6, sy - 77, 2, 2);
+  rect(ctx, '#FFFFFF', x + 3, sy - 77, 2, 2);
+  // Determined mouth (slight smirk)
+  rect(ctx, '#CC7755', x - 3, sy - 70, 7, 2);
+
+  if (state === 'hurt') {
+    ctx.globalAlpha = 0.5;
+    rect(ctx, '#FFFFFF', x - 14, sy - 92, 28, 92);
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+// ─── THICK44 ────────────────────────────────────────────────────────────────
+// Tank — massive frame, navy cap, gray tee straining at the seams
+export function drawThick44(ctx, x, groundY, facing, state, animT, z = 0) {
+  const sy = groundY - z;
+  shadow(ctx, x, groundY, 30);
+  ctx.save();
+  setFlip(ctx, x, facing);
+
+  const isPunch = state === 'punch1' || state === 'punch2' || state === 'punch3';
+  const isKick  = state === 'kick1'  || state === 'kick2';
+  const walkBob = state === 'walk' ? Math.sin(animT * Math.PI * 2) * 4 : 0;
+  const punchExt = isPunch ? Math.min(animT * 0.9, 1) * 20 : 0; // very slow
+  const kickExt  = isKick  ? Math.min(animT * 0.8, 1) * 18 : 0;
+
+  // Big dark boots
+  rect(ctx, '#1a1a1a', x - 20, sy - 10, 18, 10);
+  rect(ctx, '#1a1a1a', x + 2,  sy - 10, 18, 10);
+  rect(ctx, '#2a2a2a', x - 22, sy - 13, 20, 5);
+  rect(ctx, '#2a2a2a', x + 2,  sy - 13, 20, 5);
+
+  // Wide blue jeans
+  rect(ctx, '#3355CC', x - 18, sy - 44, 16, 34);
+  rect(ctx, '#4466DD', x - 2,  sy - 44, 16, 34); // lighter right leg
+  // Belt
+  rect(ctx, '#5C4A2A', x - 18, sy - 46, 36, 5);
+  rect(ctx, '#8B7355', x - 4,  sy - 46, 8, 5); // buckle
+
+  // Huge gray t-shirt (straining)
+  rect(ctx, '#888888', x - 24, sy - 84, 48, 44);
+  rect(ctx, '#999999', x - 12, sy - 84, 24, 44); // lighter center highlight
+  // Shirt wrinkle lines (straining seams)
+  rect(ctx, '#666666', x - 24, sy - 68, 48, 3);
+  rect(ctx, '#666666', x - 24, sy - 54, 48, 2);
+  // Neckline
+  rect(ctx, '#777777', x - 10, sy - 84, 20, 6);
+
+  // Massive arms
+  rect(ctx, '#888888', x - 34, sy - 80, 12, 36 + walkBob);
+  rect(ctx, '#888888', x + 22, sy - 80, 12, 36 - kickExt);
+
+  // HUGE fist
+  if (isPunch) {
+    rect(ctx, '#888888', x + 22, sy - 64, punchExt, 12);
+    rect(ctx, '#FDBCB4', x + 22 + punchExt, sy - 70, 18, 18);
+  }
+
+  // Ground stomp kick
+  if (isKick) {
+    const kx = x + 8 + 20 * Math.min(animT * 0.9, 1);
+    const ky = sy - 18 - kickExt;
+    rect(ctx, '#3355CC', kx - 2, ky - 10, 24, 22);
+    rect(ctx, '#1a1a1a', kx, ky, 20, 12);
+  }
+
+  // Big head
+  rect(ctx, '#FDBCB4', x - 16, sy - 104, 32, 24);
+
+  // Short dark hair (sides shaved, bit on top)
+  rect(ctx, '#2a1a0a', x - 16, sy - 104, 32, 8);
+  rect(ctx, '#1a0e04', x - 14, sy - 106, 8, 6); // left top tuft
+  rect(ctx, '#1a0e04', x + 6,  sy - 106, 8, 4); // right top tuft
+
+  // Navy blue baseball cap (forward)
+  rect(ctx, '#1a3a6a', x - 16, sy - 106, 32, 10);
+  rect(ctx, '#0a2a5a', x + 12, sy - 102, 10, 5); // brim (forward)
+  // Cap button
+  rect(ctx, '#0a2a5a', x - 2, sy - 109, 4, 4);
+
+  // Eyes (small relative to huge head)
+  rect(ctx, '#1a1a1a', x - 8, sy - 90, 5, 5);
+  rect(ctx, '#1a1a1a', x + 3, sy - 90, 5, 5);
+  rect(ctx, '#FFFFFF', x - 7, sy - 89, 2, 2);
+  rect(ctx, '#FFFFFF', x + 4, sy - 89, 2, 2);
+  // Big wide grin
+  rect(ctx, '#CC7755', x - 7, sy - 80, 14, 3);
+  rect(ctx, '#FFFFFF', x - 6, sy - 79, 12, 2);
+
+  // HP bar above head
+  const barW = 48, barH = 6;
+
+  if (state === 'hurt') {
+    ctx.globalAlpha = 0.5;
+    rect(ctx, '#FFFFFF', x - 24, sy - 108, 48, 108);
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
 }
 
 // ─── APPSRO ─────────────────────────────────────────────────────────────────

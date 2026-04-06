@@ -183,6 +183,40 @@ class AudioSystem {
     } catch (e) {}
   }
 
+  simonSuper() {
+    try {
+      this.unlock();
+      const m = this._master(0.5);
+      // Rapid-fire staccato hits
+      for (let i = 0; i < 5; i++) {
+        this._noise(m, 0.05, 0.9, 1400, 1.5, i * 0.06);
+        this._osc(m, 'square', 400 + i * 80, 200, 0.04, 0.3, i * 0.06);
+      }
+    } catch (e) {}
+  }
+
+  doraSuper() {
+    try {
+      this.unlock();
+      const m = this._master(0.52);
+      // Whoosh + heavy counter impact
+      this._osc(m, 'sine', 600, 200, 0.2, 0.4);
+      this._noise(m, 0.25, 1.3, 800, 0.7, 0.15);
+      this._osc(m, 'sine', 100, 40, 0.3, 0.7, 0.15);
+    } catch (e) {}
+  }
+
+  thick44Super() {
+    try {
+      this.unlock();
+      const m = this._master(0.7);
+      // Massive ground thud
+      this._osc(m, 'sine', 45, 20, 0.8, 1.0);
+      this._noise(m, 0.5, 2.0, 400, 0.5);
+      this._osc(m, 'sawtooth', 80, 30, 0.4, 0.5, 0.1);
+    } catch (e) {}
+  }
+
   neebsSuper() {
     try {
       this.unlock();

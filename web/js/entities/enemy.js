@@ -1,4 +1,4 @@
-import { drawGoon, drawHeavyGoon } from '../sprites/sprites.js';
+import { drawGoon, drawHeavyGoon, drawKnifeThrower, drawBiker } from '../sprites/sprites.js';
 
 // ─── Enemy ───────────────────────────────────────────────────────────────────
 
@@ -21,10 +21,60 @@ const ENEMY_TYPES = {
     draw: (ctx, x, gy, facing, state, t, z, hp, maxHp) =>
       drawHeavyGoon(ctx, x, gy, facing, state, t, z, hp, maxHp),
   },
+  knife: {
+    maxHp: 30, speed: 1.0, attackDamage: 10,
+    attackRange: 260, aggroRange: 350, // ranged — keeps distance
+    attackReach: 8, attackHeight: 8, attackYOff: 30, // tiny melee box (backup)
+    hitW: 20, hitH: 55,
+    score: 150,
+    ranged: true, // flag for AI to use projectile attack
+    preferredDist: 200, // tries to stay this far from player
+    draw: (ctx, x, gy, facing, state, t, z, hp, maxHp) =>
+      drawKnifeThrower(ctx, x, gy, facing, state, t, z, hp, maxHp),
+  },
+  biker: {
+    maxHp: 70, speed: 2.8, attackDamage: 18,
+    attackRange: 80, aggroRange: 400,
+    attackReach: 80, attackHeight: 32, attackYOff: 36,
+    hitW: 28, hitH: 68,
+    score: 200,
+    chargeEnemy: true, // flag for charge-state AI
+    draw: (ctx, x, gy, facing, state, t, z, hp, maxHp) =>
+      drawBiker(ctx, x, gy, facing, state, t, z, hp, maxHp),
+  },
 };
 
 // ─── States ──────────────────────────────────────────────────────────────────
 // idle → patrol → chase → attack → hurt/knockback → back to chase
+
+// ─── Knife Projectile ────────────────────────────────────────────────────────
+import { drawKnife } from '../sprites/sprites.js';
+
+export class Knife {
+  constructor(x, y, targetX, targetY, damage) {
+    this.x = x; this.y = y;
+    const dx = targetX - x, dy = targetY - y;
+    const dist = Math.max(1, Math.hypot(dx, dy));
+    this.vx = (dx / dist) * 5;
+    this.vy = (dy / dist) * 2.5;
+    this.angle = Math.atan2(dy, dx);
+    this.damage = damage;
+    this.dead = false;
+    this.life = 120; // auto-expire
+    this.hitW = 16; this.hitH = 8;
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy;
+    this.angle += 0.25;
+    this.life--;
+    if (this.life <= 0) this.dead = true;
+  }
+  draw(ctx, toScreen) {
+    if (this.dead) return;
+    const { sx, sy } = toScreen(this.x, this.y);
+    drawKnife(ctx, sx, sy, this.angle);
+  }
+}
 
 let _eid = 0;
 
@@ -67,6 +117,16 @@ export class Enemy {
     this.dyingT      = 0;
     this.patrolDir   = Math.random() > 0.5 ? 1 : -1;
     this.patrolTimer = 0;
+
+    // Knife thrower
+    this.ranged       = !!ENEMY_TYPES[type].ranged;
+    this.preferredDist = ENEMY_TYPES[type].preferredDist ?? 0;
+    this.onThrowKnife = null; // set by game: fn(x, y, tx, ty, dmg)
+
+    // Biker charge
+    this.chargeEnemy  = !!ENEMY_TYPES[type].chargeEnemy;
+    this.chargeVx     = 0;
+    this.isCharging   = false;
   }
 
   distTo(player) {
@@ -151,29 +211,93 @@ export class Enemy {
         const dist = Math.hypot(dx, dy);
         this.facing = dx > 0 ? 1 : -1;
 
-        if (dist > this.attackRange) {
-          this.x += (dx / dist) * this.speed;
-          this.y += (dy / dist) * this.speed * 0.7;
-          this._setState('chase', 1); // stay in chase
-        } else if (this.attackCooldown <= 0) {
-          this._setState('attack', 30);
-          this.attackActive = false;
-          this._hitPlayerThisSwing = false;
+        if (this.ranged) {
+          // Knife thrower: maintain preferred distance
+          if (dist < this.preferredDist - 30) {
+            // Back away
+            this.x -= (dx / dist) * this.speed * 0.6;
+            this.y -= (dy / dist) * this.speed * 0.4;
+          } else if (dist > this.preferredDist + 40) {
+            this.x += (dx / dist) * this.speed * 0.5;
+            this.y += (dy / dist) * this.speed * 0.3;
+          }
+          if (this.attackCooldown <= 0 && dist < this.attackRange) {
+            this._setState('attack', 35);
+            this.attackActive = false;
+            this._hitPlayerThisSwing = false;
+          } else {
+            this._setState('chase', 1);
+          }
+        } else if (this.chargeEnemy) {
+          // Biker: close in fast, then charge
+          if (dist > this.attackRange) {
+            this.x += (dx / dist) * this.speed;
+            this.y += (dy / dist) * this.speed * 0.7;
+            this._setState('chase', 1);
+            this.isCharging = false;
+          } else if (this.attackCooldown <= 0) {
+            // Wind-up charge
+            this._setState('attack', 40);
+            this.chargeVx  = this.facing * 8;
+            this.isCharging = false;
+            this.attackActive = false;
+            this._hitPlayerThisSwing = false;
+          }
+        } else {
+          // Standard melee
+          if (dist > this.attackRange) {
+            this.x += (dx / dist) * this.speed;
+            this.y += (dy / dist) * this.speed * 0.7;
+            this._setState('chase', 1);
+          } else if (this.attackCooldown <= 0) {
+            this._setState('attack', 30);
+            this.attackActive = false;
+            this._hitPlayerThisSwing = false;
+          }
         }
         break;
       }
 
       case 'attack':
-        // Active hitbox window in middle of swing (frames 10-20)
-        if (this.stateTimer <= 20 && this.stateTimer >= 10) {
-          this.attackActive = true;
-        } else {
+        if (this.ranged) {
+          // Throw knife at frame 20 (stateTimer hits 15)
+          if (this.stateTimer === 15 && this.onThrowKnife) {
+            this.onThrowKnife(this.x, this.y, player.x, player.y, this.attackDamage);
+          }
           this.attackActive = false;
-        }
-        if (this.stateTimer <= 0) {
-          this.attackCooldown = 60 + Math.random() * 40;
-          this._hitPlayerThisSwing = false;
-          this._setState('chase', 1);
+          if (this.stateTimer <= 0) {
+            this.attackCooldown = 90 + Math.random() * 60;
+            this._setState('chase', 1);
+          }
+        } else if (this.chargeEnemy) {
+          // Charge phase: frames 25-35 = active dash
+          if (this.stateTimer <= 25 && this.stateTimer >= 10) {
+            this.x += this.chargeVx;
+            this.attackActive = true;
+            this.isCharging = true;
+          } else {
+            this.attackActive = false;
+            this.isCharging = false;
+          }
+          if (this.stateTimer <= 0) {
+            this.chargeVx = 0;
+            this.isCharging = false;
+            this.attackCooldown = 80 + Math.random() * 60;
+            this._hitPlayerThisSwing = false;
+            this._setState('chase', 1);
+          }
+        } else {
+          // Standard melee attack window frames 10-20
+          if (this.stateTimer <= 20 && this.stateTimer >= 10) {
+            this.attackActive = true;
+          } else {
+            this.attackActive = false;
+          }
+          if (this.stateTimer <= 0) {
+            this.attackCooldown = 60 + Math.random() * 40;
+            this._hitPlayerThisSwing = false;
+            this._setState('chase', 1);
+          }
         }
         break;
 
