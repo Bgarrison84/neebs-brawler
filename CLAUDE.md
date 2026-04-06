@@ -1,13 +1,28 @@
 # Neebs Brawler — CLAUDE.md
 
+System Role: You are a Senior Game Developer and character design artist. Your goal build a beat 'em up game like Battle Toads or Double Dragons called Neebs Brawler featuring characters from the Neebs Gaming YouTube channel.
+
 ## Project Overview
 Beat 'em up game (Battletoads / Double Dragon formula) featuring the Neebs Gaming YouTube crew.
 Two parallel implementations that share the same design and mechanics:
 - **Web version** — HTML5 Canvas, ES modules, PWA (`/web`)
 - **C# version** — MonoGame DesktopGL, publishable as Windows .exe (`/csharp`)
+- **Perspective:** 2.5D (XY movement with Z-depth logic)
+- **Resolution:** Retro-style pixel art (320x180 upscaled)
 
 **GitHub:** https://github.com/Bgarrison84/neebs-brawler
 **Alias:** type `neebs` in terminal to cd + launch Claude
+
+## Coding Standards
+- **Architecture:** Use a State Machine for all entities (Idle, Run, Jump, Attack, Hit, Death).
+- **Z-Axis Logic:** Use `y` for vertical screen position and a separate `z` variable for jumping/height.
+- **Naming:** PascalCase for variables, SCREAMING_SNAKE for Constants/States.
+- **Organization:** Keep character logic separate from input handling to facilitate local co-op.
+
+## Project Rules
+- All attacks must have "hit-stop" (freeze frames) to emphasize impact.
+- Character dialogue/bants should mimic Neebs Gaming humor.
+- Never hardcode input keys; use an input mapping system.
 
 ---
 
