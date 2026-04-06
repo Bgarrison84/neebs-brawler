@@ -318,8 +318,8 @@ export class Game {
     } else if (id === 'simon') {
       // "TOO FAST!" — rapid-fire hits on all enemies
       audio.simonSuper();
-      this.fx.addScreenFlash('#22DD55', 0.4);
-      this.fx.addSuperText('TOO FAST!', '#22DD55');
+      this.fx.addScreenFlash('#FF44AA', 0.4);
+      this.fx.addSuperText('TOO FAST!', '#FF44AA');
       this.fx.addShake(8, 16);
       for (const e of liveEnemies) {
         e.hp = Math.max(0, e.hp - 30);
@@ -329,7 +329,7 @@ export class Game {
           this.fx.addHitSpark(
             e.x + (Math.random() - 0.5) * 30,
             e.y - 20 - Math.random() * 40,
-            '#22DD55', 8
+            '#FF44AA', 8
           );
         }
       }
@@ -337,8 +337,8 @@ export class Game {
     } else if (id === 'dora') {
       // "COUNTER!" — massive close-range counter hit
       audio.doraSuper();
-      this.fx.addScreenFlash('#CC44FF', 0.45);
-      this.fx.addSuperText('COUNTER!', '#CC44FF');
+      this.fx.addScreenFlash('#FFD700', 0.45);
+      this.fx.addSuperText('COUNTER!', '#FFD700');
       this.fx.addShake(10, 18);
       for (const e of liveEnemies) {
         const dist = Math.hypot(e.x - this.player.x, e.y - this.player.y);
@@ -348,7 +348,7 @@ export class Game {
         const d  = Math.max(1, Math.hypot(dx, dy));
         e.vx = (dx / d) * 8; e.vy = (dy / d) * 4; e.vz = 5;
         e.state = 'knockback'; e.stateTimer = 32; e.invFrames = 0;
-        this.fx.addHitSpark(e.x, e.y - 40, '#CC44FF', dmg > 30 ? 18 : 10);
+        this.fx.addHitSpark(e.x, e.y - 40, '#FFD700', dmg > 30 ? 18 : 10);
       }
 
     } else if (id === 'appsro') {
@@ -379,13 +379,13 @@ export class Game {
     } else if (id === 'thick44') {
       // "GROUND POUND!" — floor shockwave, massive damage + knockback
       audio.thick44Super();
-      this.fx.addScreenFlash('#FFAA44', 0.55);
-      this.fx.addSuperText('GROUND POUND!', '#FFAA44');
+      this.fx.addScreenFlash('#AA44FF', 0.55);
+      this.fx.addSuperText('GROUND POUND!', '#AA44FF');
       this.fx.addShake(18, 28);
       const { sx: px, sy: py } = toScreen(this.player.x, this.player.y, this.camX);
       // Ground-level shockwaves (horizontal)
       for (let i = 1; i <= 3; i++) {
-        this.fx.addShockwave(px, py, 100 * i, '#FFAA44');
+        this.fx.addShockwave(px, py, 100 * i, '#AA44FF');
       }
       for (const e of liveEnemies) {
         e.hp = Math.max(0, e.hp - 60);
@@ -393,7 +393,7 @@ export class Game {
         const d  = Math.max(1, Math.hypot(dx, dy));
         e.vx = (dx / d) * 12; e.vy = (dy / d) * 6; e.vz = 8;
         e.state = 'knockback'; e.stateTimer = 45; e.invFrames = 0;
-        this.fx.addHitSpark(e.x, e.y - 20, '#FFAA44', 20);
+        this.fx.addHitSpark(e.x, e.y - 20, '#AA44FF', 20);
       }
     }
   }
