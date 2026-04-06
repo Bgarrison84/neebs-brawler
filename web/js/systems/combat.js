@@ -81,9 +81,10 @@ export class CombatSystem {
       const hit = this.applyHit(player, e, dmg, { heavy });
       if (hit) {
         e._hitThisSwing = true;
-        fx.addHitSpark(e.x + player.facing * 16, e.y - 40, heavy ? '#FF8800' : '#FFD700', heavy ? 12 : 7);
-        fx.addHitText(e.x, e.y - 80, null, heavy ? '#FF8800' : '#FFD700', heavy ? 1.4 : 1.0);
-        fx.addDamageNum(e.x, e.y - 90, dmg);
+        const { sx: esx, sy: esy } = this.game.worldToScreen(e.x, e.y);
+        fx.addHitSpark(esx + player.facing * 16, esy - 60, heavy ? '#FF8800' : '#FFD700', heavy ? 12 : 7);
+        fx.addHitText(esx, esy - 80, null, heavy ? '#FF8800' : '#FFD700', heavy ? 1.4 : 1.0);
+        fx.addDamageNum(esx, esy - 70, dmg);
         if (heavy) fx.addShake(5, 8);
         else       fx.addShake(2, 4);
         // Sound
@@ -110,10 +111,11 @@ export class CombatSystem {
       p.hp -= dmg;
       p._hitThisSwing = true;
       p.shakeT = 8;
-      fx.addHitSpark(p.x, p.y - 20, '#AAAAAA', 5);
+      const { sx: psx, sy: psy } = this.game.worldToScreen(p.x, p.y);
+      fx.addHitSpark(psx, psy - 20, '#AAAAAA', 5);
       if (p.hp <= 0) {
         p.dead = true;
-        fx.addBreakParticles(p.x, p.y, p.color1, p.color2);
+        fx.addBreakParticles(psx, psy, p.color1, p.color2);
         fx.addShake(4, 8);
         audio.propBreak();
       } else {
@@ -140,8 +142,9 @@ export class CombatSystem {
       const hit = this.applyHit(e, player, dmg);
       if (hit) {
         e._hitPlayerThisSwing = true;
-        fx.addHitSpark(player.x - e.facing * 10, player.y - 40, '#FF3333', 7);
-        fx.addDamageNum(player.x, player.y - 100, dmg);
+        const { sx: plsx, sy: plsy } = this.game.worldToScreen(player.x, player.y);
+        fx.addHitSpark(plsx - e.facing * 10, plsy - 60, '#FF3333', 7);
+        fx.addDamageNum(plsx, plsy - 80, dmg);
         fx.addShake(3, 6);
         audio.punchLight();
         audio.playerHurt();

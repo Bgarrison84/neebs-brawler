@@ -1,4 +1,4 @@
-import { drawGoon, drawHeavyGoon, drawKnifeThrower, drawBiker } from '../sprites/sprites.js';
+import { drawGoon, drawHeavyGoon, drawKnifeThrower, drawBiker, drawKnife } from '../sprites/sprites.js';
 
 // ─── Enemy ───────────────────────────────────────────────────────────────────
 
@@ -48,8 +48,6 @@ const ENEMY_TYPES = {
 // idle → patrol → chase → attack → hurt/knockback → back to chase
 
 // ─── Knife Projectile ────────────────────────────────────────────────────────
-import { drawKnife } from '../sprites/sprites.js';
-
 export class Knife {
   constructor(x, y, targetX, targetY, damage) {
     this.x = x; this.y = y;

@@ -79,6 +79,11 @@ export class Game {
     this._loadWave(0);
   }
 
+  // Convert world coordinates to canvas-space screen coordinates
+  worldToScreen(wx, wy) {
+    return toScreen(wx, wy, this.camX);
+  }
+
   _spawnProps() {
     // Spawn props within the current zone's x range
     const zoneXMin = this.zoneIdx === 0 ? 0 : ZONE_BOUNDS[this.zoneIdx - 1];
@@ -194,13 +199,13 @@ export class Game {
       d.update();
       // Player pickup
       if (!d.dead) {
-        const { sx: px, sy: py } = toScreen(this.player.x, this.player.y);
-        const { sx: dx, sy: dy } = toScreen(d.x, d.y);
-        if (Math.hypot(px - dx, py - dy) < 28) {
+        // Use world-space distance for pickup, screen-space for FX
+        if (Math.hypot(this.player.x - d.x, (this.player.y - d.y) * 1.5) < 36) {
           this._applyDrop(d);
           d.dead = true;
-          this.fx.addPickupFlash(dx, dy - 14, d.def.color);
-          this.fx.addBuffText(dx, dy - 40, d.def.label);
+          const { sx: dsx, sy: dsy } = this.worldToScreen(d.x, d.y);
+          this.fx.addPickupFlash(dsx, dsy - 14, d.def.color);
+          this.fx.addBuffText(dsx, dsy - 40, d.def.label);
         }
       }
     }
@@ -218,8 +223,10 @@ export class Game {
           this.player.invFrames = 20;
           this.player.state = 'hurt';
           this.player.stateTimer = 14;
-          this.fx.addHitSpark(k.x, k.y, '#CCCCCC', 6);
-          this.fx.addDamageNum(this.player.x, this.player.y - 100, k.damage);
+          const { sx: ksx, sy: ksy } = this.worldToScreen(k.x, k.y);
+          const { sx: plsx, sy: plsy } = this.worldToScreen(this.player.x, this.player.y);
+          this.fx.addHitSpark(ksx, ksy - 20, '#CCCCCC', 6);
+          this.fx.addDamageNum(plsx, plsy - 80, k.damage);
           this.fx.addShake(3, 6);
           audio.playerHurt();
           this.player.fillMeter(5);
@@ -313,7 +320,8 @@ export class Game {
         e.state     = 'hurt';
         e.stateTimer = 90;
         e.invFrames  = 0;
-        this.fx.addHitSpark(e.x, e.y - 40, '#FF6B35', 14);
+        const { sx: esx, sy: esy } = this.worldToScreen(e.x, e.y);
+        this.fx.addHitSpark(esx, esy - 60, '#00FF44', 14);
       }
     } else if (id === 'simon') {
       // "TOO FAST!" — rapid-fire hits on all enemies
@@ -324,11 +332,11 @@ export class Game {
       for (const e of liveEnemies) {
         e.hp = Math.max(0, e.hp - 30);
         e.state = 'hurt'; e.stateTimer = 40; e.invFrames = 0;
-        // Rapid spark burst at 3 different spots
+        const { sx: esx, sy: esy } = this.worldToScreen(e.x, e.y);
         for (let i = 0; i < 3; i++) {
           this.fx.addHitSpark(
-            e.x + (Math.random() - 0.5) * 30,
-            e.y - 20 - Math.random() * 40,
+            esx + (Math.random() - 0.5) * 30,
+            esy - 30 - Math.random() * 50,
             '#FF44AA', 8
           );
         }
@@ -342,13 +350,14 @@ export class Game {
       this.fx.addShake(10, 18);
       for (const e of liveEnemies) {
         const dist = Math.hypot(e.x - this.player.x, e.y - this.player.y);
-        const dmg  = dist < 140 ? 55 : 20; // massive up close, less at range
+        const dmg  = dist < 140 ? 55 : 20;
         e.hp = Math.max(0, e.hp - dmg);
         const dx = e.x - this.player.x, dy = e.y - this.player.y;
         const d  = Math.max(1, Math.hypot(dx, dy));
         e.vx = (dx / d) * 8; e.vy = (dy / d) * 4; e.vz = 5;
         e.state = 'knockback'; e.stateTimer = 32; e.invFrames = 0;
-        this.fx.addHitSpark(e.x, e.y - 40, '#FFD700', dmg > 30 ? 18 : 10);
+        const { sx: esx, sy: esy } = this.worldToScreen(e.x, e.y);
+        this.fx.addHitSpark(esx, esy - 60, '#FFD700', dmg > 30 ? 18 : 10);
       }
 
     } else if (id === 'appsro') {
@@ -393,7 +402,8 @@ export class Game {
         const d  = Math.max(1, Math.hypot(dx, dy));
         e.vx = (dx / d) * 12; e.vy = (dy / d) * 6; e.vz = 8;
         e.state = 'knockback'; e.stateTimer = 45; e.invFrames = 0;
-        this.fx.addHitSpark(e.x, e.y - 20, '#AA44FF', 20);
+        const { sx: esx, sy: esy } = this.worldToScreen(e.x, e.y);
+        this.fx.addHitSpark(esx, esy - 50, '#AA44FF', 20);
       }
     }
   }
