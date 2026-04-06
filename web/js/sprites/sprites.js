@@ -411,6 +411,107 @@ export function drawBackground(ctx, W, H) {
   ctx.beginPath(); ctx.moveTo(320, 250); ctx.lineTo(350, 340); ctx.stroke();
 }
 
+// ─── APPSRO ─────────────────────────────────────────────────────────────────
+// Lab coat, wild dark hair, glasses, heavy frame — devastating slow puncher
+export function drawAppsro(ctx, x, groundY, facing, state, animT, z = 0) {
+  const sy = groundY - z;
+  shadow(ctx, x, groundY, 22);
+  ctx.save();
+  setFlip(ctx, x, facing);
+
+  const isPunch = state === 'punch1' || state === 'punch2' || state === 'punch3';
+  const isKick  = state === 'kick1'  || state === 'kick2';
+  const walkBob = state === 'walk' ? Math.sin(animT * Math.PI * 2) * 6 : 0;
+  const punchExt = isPunch ? Math.min(animT * 1.5, 1) * 18 : 0;
+  const kickExt  = isKick  ? Math.min(animT * 1.2, 1) * 20 : 0;
+
+  // Dark dress shoes
+  rect(ctx, '#1a1212', x - 16, sy - 8,  14, 8);
+  rect(ctx, '#1a1212', x + 2,  sy - 8,  14, 8);
+  rect(ctx, '#2a2020', x - 18, sy - 10, 16, 4);
+  rect(ctx, '#2a2020', x + 2,  sy - 10, 16, 4);
+
+  // Charcoal slacks (show below coat hem)
+  rect(ctx, '#2a2a3a', x - 14, sy - 40, 12, 30);
+  rect(ctx, '#2a2a3a', x + 2,  sy - 40, 12, 30);
+
+  // Lab coat body (wide, off-white)
+  rect(ctx, '#E8E8E8', x - 20, sy - 78, 40, 44);
+  rect(ctx, '#D0D0D0', x - 20, sy - 78, 8, 32);   // left lapel shadow
+  rect(ctx, '#D0D0D0', x + 12, sy - 78, 8, 32);   // right lapel shadow
+  // Inner shirt + tie
+  rect(ctx, '#224488', x - 6,  sy - 74, 12, 20);
+  rect(ctx, '#CC2200', x - 2,  sy - 74, 4, 14);
+  // Buttons
+  rect(ctx, '#AAAAAA', x - 1, sy - 56, 2, 2);
+  rect(ctx, '#AAAAAA', x - 1, sy - 50, 2, 2);
+  // Breast pocket + pen
+  rect(ctx, '#CCCCCC', x + 10, sy - 68, 8, 10);
+  rect(ctx, '#333388', x + 13, sy - 68, 2, 8);
+
+  // Arms (coat sleeves)
+  rect(ctx, '#E0E0E0', x - 28, sy - 74, 10, 32 + walkBob);
+  rect(ctx, '#E0E0E0', x + 18, sy - 74, 10, 32 - kickExt);
+
+  // Punch — arm extends, heavy fist
+  if (isPunch) {
+    rect(ctx, '#E0E0E0', x + 18, sy - 60, punchExt, 10); // extending sleeve
+    rect(ctx, '#FDBCB4', x + 18 + punchExt, sy - 64, 14, 14); // big fist
+  }
+
+  // Kick — slow heavy boot
+  if (isKick) {
+    const kx = x + 8  + 22 * Math.min(animT, 1);
+    const ky = sy - 24 - kickExt;
+    rect(ctx, '#2a2a3a', kx, ky - 8,  18, 18);
+    rect(ctx, '#1a1212', kx + 2, ky,  14, 10);
+  }
+
+  // Head
+  rect(ctx, '#FDBCB4', x - 14, sy - 98, 28, 22);
+
+  // Wild dark hair
+  rect(ctx, '#1a1a1a', x - 14, sy - 98, 28, 10);
+  rect(ctx, '#111111', x - 16, sy - 96,  6, 16);
+  rect(ctx, '#111111', x + 10, sy - 96,  6, 14);
+  rect(ctx, '#222222', x - 18, sy - 92,  4, 8);
+  rect(ctx, '#222222', x + 14, sy - 92,  4, 6);
+  rect(ctx, '#111111', x - 6,  sy - 102, 4, 6);
+  rect(ctx, '#111111', x + 2,  sy - 102, 4, 4);
+
+  // Eyes
+  rect(ctx, '#1a1a1a', x - 9, sy - 84, 5, 4);
+  rect(ctx, '#1a1a1a', x + 4, sy - 84, 5, 4);
+  rect(ctx, '#FFFFFF', x - 8, sy - 83, 2, 2);
+  rect(ctx, '#FFFFFF', x + 5, sy - 83, 2, 2);
+
+  // Glasses (rectangular frames)
+  ctx.strokeStyle = '#111111';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x - 11, sy - 88, 9, 7);
+  ctx.strokeRect(x + 2,  sy - 88, 9, 7);
+  rect(ctx, '#111111', x - 2,  sy - 86, 4, 2); // bridge
+  rect(ctx, '#111111', x - 13, sy - 86, 2, 3); // left temple
+  rect(ctx, '#111111', x + 11, sy - 86, 2, 3); // right temple
+
+  // Smirk
+  rect(ctx, '#CC7755', x - 4, sy - 78, 8, 2);
+
+  // HP bar above head
+  if (ctx._showHpBar) {
+    // Called from charselect preview — skip hp bar
+  }
+
+  // Hurt flash
+  if (state === 'hurt') {
+    ctx.globalAlpha = 0.5;
+    rect(ctx, '#FFFFFF', x - 20, sy - 104, 40, 104);
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+}
+
 // ─── HIT TEXT ────────────────────────────────────────────────────────────────
 const HIT_WORDS = ['POW!', 'WHAM!', 'CRACK!', 'SMASH!', 'BAM!', 'KAPOW!', 'THUD!'];
 export function randomHitWord() {

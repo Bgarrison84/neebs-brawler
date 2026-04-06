@@ -37,16 +37,17 @@ const PROP_LAYOUT = [
 ];
 
 export class Game {
-  constructor(canvas) {
-    this.canvas = canvas;
-    this.ctx    = canvas.getContext('2d');
-    this.W      = canvas.width;
-    this.H      = canvas.height;
+  constructor(canvas, charDef) {
+    this.canvas  = canvas;
+    this.ctx     = canvas.getContext('2d');
+    this.W       = canvas.width;
+    this.H       = canvas.height;
+    this.charDef = charDef; // selected character definition
 
     this.combat = new CombatSystem(this);
     this.fx     = new FxSystem();
 
-    this.player  = new Player(400, 200);
+    this.player  = new Player(400, 200, charDef);
     this.enemies = [];
     this.props   = [];
     this.drops   = [];
@@ -246,7 +247,7 @@ export class Game {
     const hpColor = hpRatio > 0.5 ? '#22DD44' : hpRatio > 0.25 ? '#FFAA00' : '#FF2222';
     ctx.fillStyle = hpColor;
     ctx.fillRect(hpX, hpY, Math.floor(hpBarW * hpRatio), hpBarH);
-    ctx.strokeStyle = '#FF6B35';
+    ctx.strokeStyle = this.charDef.color;
     ctx.lineWidth = 2;
     ctx.strokeRect(hpX, hpY, hpBarW, hpBarH);
 
@@ -256,10 +257,10 @@ export class Game {
     ctx.textAlign = 'left';
     ctx.fillText(`HP  ${this.player.hp}/${this.player.maxHp}`, hpX + 6, hpY + 13);
 
-    // Neebs label
+    // Character name label
     ctx.font = 'bold 14px Courier New';
-    ctx.fillStyle = '#FF6B35';
-    ctx.fillText('NEEBS', hpX, hpY - 4);
+    ctx.fillStyle = this.charDef.color;
+    ctx.fillText(this.charDef.name, hpX, hpY - 4);
 
     // Score
     ctx.textAlign = 'right';

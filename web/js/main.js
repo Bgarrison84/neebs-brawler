@@ -1,25 +1,38 @@
-import { Game }         from './game.js';
-import { InputManager } from './input.js';
+import { Game }             from './game.js';
+import { InputManager }     from './input.js';
+import { CharSelectScreen } from './charselect.js';
 
 const canvas = document.getElementById('game-canvas');
 const input  = new InputManager();
-const game   = new Game(canvas);
+
+let charSelect = new CharSelectScreen(canvas);
+let game       = null;
 
 let lastTime = performance.now();
 
 function loop(now) {
-  const dt = Math.min((now - lastTime) / 1000, 0.05); // cap at 50ms
+  const dt = Math.min((now - lastTime) / 1000, 0.05);
   lastTime = now;
 
-  game.update(input, dt);
-  game.draw();
+  if (game) {
+    // ── Gameplay ──
+    game.update(input, dt);
+    game.draw();
+  } else {
+    // ── Character select ──
+    charSelect.update(input);
+    charSelect.draw();
+
+    if (charSelect.isDone) {
+      game = new Game(canvas, charSelect.selectedChar);
+    }
+  }
 
   requestAnimationFrame(loop);
 }
 
 requestAnimationFrame(loop);
 
-// Service worker registration
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
