@@ -1,7 +1,7 @@
 const CACHE = 'neebs-brawler-v1';
 const PRECACHE = [
   '.', 'index.html', 'css/style.css',
-  'js/main.js', 'js/game.js', 'js/input.js',
+  'js/main.js', 'js/game.js', 'js/input.js', 'js/charselect.js',
   'js/sprites/sprites.js',
   'js/systems/fx.js', 'js/systems/combat.js',
   'js/entities/player.js', 'js/entities/enemy.js', 'js/entities/prop.js',
